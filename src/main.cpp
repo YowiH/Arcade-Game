@@ -35,10 +35,13 @@ int main ()
 		ClearBackground(BLACK);
 
 		// draw some text using the default font
-		DrawText("Hello Raylib", 200,200,20,WHITE);
+		DrawText("Hello World", 200,200,20,WHITE);
 
-		// draw our texture to the screen
+		// draw our texture to the scre
 		DrawTexture(wabbit, 400, 200, WHITE);
+		DrawTexture(wabbit, 450, 250, WHITE);
+		DrawTexture(wabbit, 500, 300, WHITE);
+		DrawTexture(wabbit, 550, 350, WHITE);
 		
 		// end the frame and get ready for the next one  (display frame, poll input, etc...)
 		EndDrawing();
