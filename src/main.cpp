@@ -36,6 +36,21 @@ void UpdateGame() {//update variables and positions
 		player_pos = { player_pos.x, player_pos.y - 5 };
 	}
 
+	//x axis limits
+	if (player_pos.x > 240) {
+		player_pos = { 240, player_pos.y };
+	}
+	else if(player_pos.x < 0) {
+		player_pos = { 0, player_pos.y };
+	}
+	//y axis limits
+	if (player_pos.y > 240) {
+		player_pos = { player_pos.x, 240 };
+	}
+	else if (player_pos.y < 0) {
+		player_pos = { player_pos.x, 0 };
+	}
+
 }
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
@@ -55,7 +70,7 @@ int main ()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(1280, 800, "Hello Raylib");
+	InitWindow(256, 256, "Hello Raylib");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
