@@ -6,7 +6,7 @@ Use this as a starting point or replace it with your code.
 by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
 
 */
-//this is a comment
+
 
 #include "raylib.h"
 
@@ -14,12 +14,27 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 
 Vector2 player_size{ 16, 16 };
 Vector2 player_pos{0, 0};
+int player_Speed = 5;
 
 void InitGame() {
 	SetTargetFPS(60);
 }
 void UpdateGame() {//update variables and positions
-	player_pos = { player_pos.x + 5, player_pos.y };
+	//command with keys
+
+	if (IsKeyDown('A')) {
+		player_pos = { player_pos.x - 5, player_pos.y };
+	}
+	else if (IsKeyDown('D')) {
+		player_pos = { player_pos.x + 5, player_pos.y };
+	}
+
+	if (IsKeyDown('S')) {
+		player_pos = { player_pos.x, player_pos.y + 5 };
+	}
+	else if (IsKeyDown('W')) {
+		player_pos = { player_pos.x, player_pos.y - 5 };
+	}
 
 }
 void DrawGame() {//draws the game every frame
