@@ -6,21 +6,41 @@ Use this as a starting point or replace it with your code.
 by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
 
 */
-
+using namespace std;
 
 #include "raylib.h"
-
+#include <vector>
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
 
 Vector2 player_size{ 16, 16 };
 Vector2 player_pos{0, 0};
-int player_Speed = 5;
+int player_Speed = 2;
 
+struct bullet {
+	int speed = 5;
+	Vector2 velocity;
+	Vector2 position;
+	int damage;
+};
+
+std::vector<bullet> bullet_tracker{};
+std::vector<bullet> bullet_pool{};
+
+//Texture wabbit;
+
+void LoadAssets() {
+	//load all assets here please!!
+	//wabbit = LoadTexture("wabbit_alpha.png");
+}
+void UnloadGame() {
+	//UnloadTexture(wabbit);
+}
 void InitGame() {
 	SetTargetFPS(60);
+	LoadAssets();
 }
 void UpdateGame() {//update variables and positions
-	//command with keys
+	//MOVEMENT
 
 	if (IsKeyDown('A')) {
 		player_pos = { player_pos.x - 5, player_pos.y };
@@ -51,6 +71,15 @@ void UpdateGame() {//update variables and positions
 		player_pos = { player_pos.x, 0 };
 	}
 
+	//SHOOTING BULLETS
+
+	//create bullets
+	if (IsKeyDown(KEY_UP)) {
+		struct bullet b;
+	}
+
+	//destroy bullets
+
 }
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
@@ -59,8 +88,12 @@ void DrawGame() {//draws the game every frame
 	EndDrawing();
 }
 void UpdateDrawFrame() {
-	UpdateGame();
-	DrawGame();
+	while (!WindowShouldClose) {
+		UpdateGame();
+		DrawGame();
+	}
+	UnloadGame();
+	//CloseWindow();
 }
 
 int main ()
@@ -76,7 +109,6 @@ int main ()
 	SearchAndSetResourceDir("resources");
 
 	// Load a texture from the resources directory
-	Texture wabbit = LoadTexture("wabbit_alpha.png");
 	
 	
 
@@ -86,7 +118,6 @@ int main ()
 
 	// cleanup
 	// unload our texture so it can be cleaned up
-	UnloadTexture(wabbit);
 
 	// destroy the window and cleanup the OpenGL context
 	CloseWindow();
