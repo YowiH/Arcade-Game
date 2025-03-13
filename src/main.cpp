@@ -23,6 +23,12 @@ struct bullet {
 	int damage;
 };
 
+struct obstacle {
+	Vector2 position;
+	Color color;
+};
+struct obstacle obs;
+
 std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
 
@@ -37,7 +43,9 @@ void UnloadGame() {
 }
 void InitGame() {
 	SetTargetFPS(60);
-	LoadAssets();
+	obs.color = RED;
+	obs.position = Vector2{ 125, 125 };
+	//LoadAssets();
 }
 void UpdateGame() {//update variables and positions
 	//MOVEMENT
@@ -75,24 +83,58 @@ void UpdateGame() {//update variables and positions
 
 	//create bullets
 	if (IsKeyDown(KEY_UP)) {
-		struct bullet b;
+		//first look for bullets in the pool
+		if (bullet_pool.empty()) {
+			struct bullet b;
+			bullet_tracker.push_back(b);
+		}
+		else {
+			bullet_tracker.push_back(bullet_pool.back());
+			bullet_pool.pop_back();
+		}
 	}
 
+	
+	
 	//destroy bullets
+	//get the lenght of the bullet vector
+	int bullet_amount = bullet_tracker.size();
+	for (int i = 0; i < bullet_amount; i++) {
+		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
+		if ((bullet_tracker[i].position.x >= 0 || bullet_tracker[i].position.x >= 256 || bullet_tracker[i].position.y >= 0 || bullet_tracker[i].position.x >= 256)) { //&& bullet_tracker[i] != NULL
+			//save the bullet
+			bullet_pool.push_back(bullet_tracker[i]);
+			//borrar bullet
+			bullet_tracker.erase(bullet_tracker.begin() + i);
+			i--;
+		}
+			
+	}
 
 }
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
+	//draw background
 	ClearBackground(RAYWHITE);
+
+	//draw player
 	DrawRectangleV(player_pos, player_size, BLACK);
+
+	//draw obstacle
+	DrawRectangleV(obs.position, { 16, 16 }, obs.color);
+
 	EndDrawing();
 }
 void UpdateDrawFrame() {
+	UpdateGame();
+	DrawGame();
+	/*
 	while (!WindowShouldClose) {
 		UpdateGame();
 		DrawGame();
 	}
 	UnloadGame();
+	*/
 	//CloseWindow();
 }
 
@@ -103,23 +145,26 @@ int main ()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(256, 256, "Hello Raylib");
+	InitWindow(256, 256, "Journey of the prairie king");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
 
 	// Load a texture from the resources directory
 	
-	
+	InitGame();
 
+	
 	while (!WindowShouldClose()) {
 		UpdateDrawFrame();
 	}
-
+	return 0;
+	/*
 	// cleanup
 	// unload our texture so it can be cleaned up
 
 	// destroy the window and cleanup the OpenGL context
 	CloseWindow();
 	return 0;
+	*/
 }
