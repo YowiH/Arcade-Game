@@ -29,6 +29,7 @@ struct obstacle {
 };
 struct obstacle obs;
 
+
 std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
 
