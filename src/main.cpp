@@ -29,7 +29,6 @@ struct obstacle {
 };
 struct obstacle obs;
 
-
 std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
 
@@ -87,27 +86,37 @@ void UpdateGame() {//update variables and positions
 		//first look for bullets in the pool
 		if (bullet_pool.empty()) {
 			struct bullet b;
+			b.damage = 1;
+			b.position = player_pos;
+			b.velocity = { 1, 1 };
 			bullet_tracker.push_back(b);
 		}
 		else {
 			bullet_tracker.push_back(bullet_pool.back());
+			bullet_tracker.back().damage = 1;
+			bullet_tracker.back().position = player_pos;
+			bullet_tracker.back().velocity = { 1, 1 };
 			bullet_pool.pop_back();
 		}
 	}
 
-	
-	
-	//destroy bullets
 	//get the lenght of the bullet vector
 	int bullet_amount = bullet_tracker.size();
+	//update bullet's position
+	for (int i = 0; i < bullet_amount; i++) {
+		bullet& b = bullet_tracker[i];
+		b.position = Vector2 { b.position.x + b.velocity.x * b.speed, b.position.y + b.velocity.y * b.speed };
+	}
+	
+	//destroy bullets
 	for (int i = 0; i < bullet_amount; i++) {
 		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
-		if ((bullet_tracker[i].position.x >= 0 || bullet_tracker[i].position.x >= 256 || bullet_tracker[i].position.y >= 0 || bullet_tracker[i].position.x >= 256)) { //&& bullet_tracker[i] != NULL
+		if ((bullet_tracker[i].position.x <= 0 || bullet_tracker[i].position.x >= 256 || bullet_tracker[i].position.y <= 0 || bullet_tracker[i].position.x >= 256)) { //&& bullet_tracker[i] != NULL
 			//save the bullet
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
 			bullet_tracker.erase(bullet_tracker.begin() + i);
-			i--;
+			//i--;
 		}
 			
 	}
@@ -123,6 +132,12 @@ void DrawGame() {//draws the game every frame
 
 	//draw obstacle
 	DrawRectangleV(obs.position, { 16, 16 }, obs.color);
+
+	//draw bullets
+	int bullet_amount = bullet_tracker.size();
+	for (int i = 0; i < bullet_amount; i++) {
+		DrawRectangleV(bullet_tracker[i].position, { 4, 4 }, BLUE);
+	}
 
 	EndDrawing();
 }
@@ -146,7 +161,7 @@ int main ()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(256, 256, "Journey of the prairie king");
+	InitWindow(512, 512, "Journey of the prairie king");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
