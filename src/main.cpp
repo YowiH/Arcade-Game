@@ -12,9 +12,14 @@ using namespace std;
 #include <vector>
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
 
+int frame_counter = 0;
+int fire_rate = 15;
+
 Vector2 player_size{ 16, 16 };
 Vector2 player_pos{0, 0};
-int player_Speed = 2;
+int player_Speed = 1;
+Vector2 Shoot_dir;
+int damage = 1;
 
 struct bullet {
 	int speed = 5;
@@ -80,25 +85,43 @@ void UpdateGame() {//update variables and positions
 	}
 
 	//SHOOTING BULLETS
+	//we get the direction of the bullet
+	if (IsKeyDown(KEY_UP)) {
+		Shoot_dir = {Shoot_dir.x, -1};
+	}
+	else if (IsKeyDown(KEY_DOWN)) {
+		Shoot_dir = { Shoot_dir.x, 1 };
+	}
+	if (IsKeyDown(KEY_RIGHT)) {
+		Shoot_dir = { 1, Shoot_dir.y };
+	}
+	else if (IsKeyDown(KEY_LEFT)) {
+		Shoot_dir = { -1, Shoot_dir.y };
+	}
 
 	//create bullets
-	if (IsKeyDown(KEY_UP)) {
+	if ((Shoot_dir.x != 0 || Shoot_dir.y != 0) && frame_counter%fire_rate == 0) {
 		//first look for bullets in the pool
 		if (bullet_pool.empty()) {
 			struct bullet b;
-			b.damage = 1;
+			b.damage = damage;
 			b.position = player_pos;
-			b.velocity = { 1, 1 };
+			b.velocity =  Shoot_dir;
 			bullet_tracker.push_back(b);
 		}
 		else {
 			bullet_tracker.push_back(bullet_pool.back());
-			bullet_tracker.back().damage = 1;
+			bullet_tracker.back().damage = damage;
 			bullet_tracker.back().position = player_pos;
-			bullet_tracker.back().velocity = { 1, 1 };
+			bullet_tracker.back().velocity = Shoot_dir;
 			bullet_pool.pop_back();
 		}
+		frame_counter++;
 	}
+	else if (frame_counter % fire_rate != 0) {
+		frame_counter++;
+	}
+	Shoot_dir = { 0, 0 };
 
 	//get the lenght of the bullet vector
 	int bullet_amount = bullet_tracker.size();
@@ -115,11 +138,13 @@ void UpdateGame() {//update variables and positions
 			//save the bullet
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
-			bullet_tracker.erase(bullet_tracker.begin() + i);
+			//bullet_tracker.erase (bullet_tracker.begin() + i);
 			//i--;
 		}
 			
 	}
+
+	//frame_counter++;
 
 }
 void DrawGame() {//draws the game every frame
