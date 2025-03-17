@@ -6,17 +6,22 @@ Use this as a starting point or replace it with your code.
 by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
 
 */
-using namespace std;
 
 #include "raylib.h"
 #include <vector>
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
+#include <iostream>
+
+using namespace std;
 
 int frame_counter = 0;
 int fire_rate = 15;
 
-Vector2 player_size{ 16, 16 };
-Vector2 player_pos{0, 0};
+const float tile_size = 32;
+const float area_size = tile_size * 16;
+
+Vector2 player_size{ tile_size, tile_size };
+Vector2 player_pos{ tile_size * 8, tile_size * 3 };
 int player_Speed = 1;
 Vector2 Shoot_dir;
 int damage = 1;
@@ -49,7 +54,7 @@ void UnloadGame() {
 void InitGame() {
 	SetTargetFPS(60);
 	obs.color = RED;
-	obs.position = Vector2{ 125, 125 };
+	obs.position = Vector2{ tile_size * 8, tile_size * 8 };
 	//LoadAssets();
 }
 void UpdateGame() {//update variables and positions
@@ -70,15 +75,15 @@ void UpdateGame() {//update variables and positions
 	}
 
 	//x axis limits
-	if (player_pos.x > 240) {
-		player_pos = { 240, player_pos.y };
+	if (player_pos.x > area_size - tile_size) {
+		player_pos = { area_size - tile_size, player_pos.y };
 	}
-	else if(player_pos.x < 0) {
+	else if (player_pos.x < 0) {
 		player_pos = { 0, player_pos.y };
 	}
 	//y axis limits
-	if (player_pos.y > 240) {
-		player_pos = { player_pos.x, 240 };
+	if (player_pos.y > area_size - tile_size) {
+		player_pos = { player_pos.x, area_size - tile_size };
 	}
 	else if (player_pos.y < 0) {
 		player_pos = { player_pos.x, 0 };
@@ -87,7 +92,7 @@ void UpdateGame() {//update variables and positions
 	//SHOOTING BULLETS
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
-		Shoot_dir = {Shoot_dir.x, -1};
+		Shoot_dir = { Shoot_dir.x, -1 };
 	}
 	else if (IsKeyDown(KEY_DOWN)) {
 		Shoot_dir = { Shoot_dir.x, 1 };
@@ -100,19 +105,19 @@ void UpdateGame() {//update variables and positions
 	}
 
 	//create bullets
-	if ((Shoot_dir.x != 0 || Shoot_dir.y != 0) && frame_counter%fire_rate == 0) {
+	if ((Shoot_dir.x != 0 || Shoot_dir.y != 0) && frame_counter % fire_rate == 0) {
 		//first look for bullets in the pool
 		if (bullet_pool.empty()) {
 			struct bullet b;
 			b.damage = damage;
-			b.position = player_pos;
-			b.velocity =  Shoot_dir;
+			b.position = { player_pos.x + tile_size / 2, player_pos.y + tile_size / 2 };
+			b.velocity = Shoot_dir;
 			bullet_tracker.push_back(b);
 		}
 		else {
 			bullet_tracker.push_back(bullet_pool.back());
 			bullet_tracker.back().damage = damage;
-			bullet_tracker.back().position = player_pos;
+			bullet_tracker.back().position = { player_pos.x + tile_size / 2 , player_pos.y + tile_size / 2 };
 			bullet_tracker.back().velocity = Shoot_dir;
 			bullet_pool.pop_back();
 		}
@@ -128,23 +133,21 @@ void UpdateGame() {//update variables and positions
 	//update bullet's position
 	for (int i = 0; i < bullet_amount; i++) {
 		bullet& b = bullet_tracker[i];
-		b.position = Vector2 { b.position.x + b.velocity.x * b.speed, b.position.y + b.velocity.y * b.speed };
+		b.position = Vector2{ b.position.x + b.velocity.x * b.speed, b.position.y + b.velocity.y * b.speed };
 	}
-	
+
 	//destroy bullets
-	for (int i = 0; i < bullet_amount; i++) {
+	for (int i = bullet_amount - 1; i >= 0; i--) {
 		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
-		if ((bullet_tracker[i].position.x <= 0 || bullet_tracker[i].position.x >= 256 || bullet_tracker[i].position.y <= 0 || bullet_tracker[i].position.x >= 256)) { //&& bullet_tracker[i] != NULL
+		if ((bullet_tracker[i].position.x <= 0 || bullet_tracker[i].position.x >= area_size || bullet_tracker[i].position.y <= 0 || bullet_tracker[i].position.x >= area_size)) { //&& bullet_tracker[i] != NULL
 			//save the bullet
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
-			//bullet_tracker.erase (bullet_tracker.begin() + i);
-			//i--;
+			auto j = bullet_tracker.begin() + i;
+			bullet_tracker.erase(j);
 		}
-			
-	}
 
-	//frame_counter++;
+	}
 
 }
 void DrawGame() {//draws the game every frame
@@ -156,12 +159,12 @@ void DrawGame() {//draws the game every frame
 	DrawRectangleV(player_pos, player_size, BLACK);
 
 	//draw obstacle
-	DrawRectangleV(obs.position, { 16, 16 }, obs.color);
+	DrawRectangleV(obs.position, { tile_size, tile_size }, obs.color);
 
 	//draw bullets
 	int bullet_amount = bullet_tracker.size();
 	for (int i = 0; i < bullet_amount; i++) {
-		DrawRectangleV(bullet_tracker[i].position, { 4, 4 }, BLUE);
+		DrawRectangleV(bullet_tracker[i].position, { tile_size / 4, tile_size / 4 }, BLUE);
 	}
 
 	EndDrawing();
@@ -179,23 +182,23 @@ void UpdateDrawFrame() {
 	//CloseWindow();
 }
 
-int main ()
+int main()
 {
 	//InitGame();
 	// Tell the window to use vsync and work on high DPI displays
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(512, 512, "Journey of the prairie king");
+	InitWindow(area_size, area_size, "Journey of the prairie king");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
 
 	// Load a texture from the resources directory
-	
+
 	InitGame();
 
-	
+
 	while (!WindowShouldClose()) {
 		UpdateDrawFrame();
 	}
