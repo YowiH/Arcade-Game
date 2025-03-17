@@ -34,6 +34,7 @@ struct bullet {
 };
 
 struct obstacle {
+	bool alive = true;
 	Vector2 position;
 	Color color;
 };
@@ -143,7 +144,7 @@ void UpdateGame() {//update variables and positions
 			//save the bullet
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
-			auto j = bullet_tracker.begin() + i;
+			auto& j = bullet_tracker.begin() + i;
 			bullet_tracker.erase(j);
 		}
 
@@ -151,12 +152,22 @@ void UpdateGame() {//update variables and positions
 
 	//COLLISIONS
 	//player-enemies
-	if (CheckCollisionCircles(player_pos, tile_size/2, obs.position, tile_size/2)) {
-		CloseWindow();
+	if (CheckCollisionCircles(player_pos, tile_size/2, obs.position, tile_size/2) && obs.alive) {
+		cout << "you are dead" << endl;
 	}
 	//player-obstacles
+	
 	//bullet-enemies
-	//bullets_obstacles
+	//bullets-obstacles
+	for (int i = bullet_amount - 1; i >= 0; i--) {
+		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, obs.position, tile_size / 2)) {
+			obs.alive = false;
+			bullet_pool.push_back(bullet_tracker[i]);
+			//borrar bullet
+			auto& j = bullet_tracker.begin() + i;
+			bullet_tracker.erase(j);
+		}
+	}
 
 
 }
@@ -169,7 +180,9 @@ void DrawGame() {//draws the game every frame
 	DrawRectangleV(player_pos, player_size, BLACK);
 
 	//draw obstacle
-	DrawRectangleV(obs.position, { tile_size, tile_size }, obs.color);
+	if (obs.alive) {
+		DrawRectangleV(obs.position, { tile_size, tile_size }, obs.color);
+	}
 
 	//draw bullets
 	int bullet_amount = bullet_tracker.size();
