@@ -33,6 +33,13 @@ struct bullet {
 	int damage;
 };
 
+struct enemy {
+	int speed = 5;
+	Vector2 velocity;
+	Vector2 position;
+	int hp;
+};
+
 struct obstacle {
 	bool alive = true;
 	Vector2 position;
@@ -40,8 +47,13 @@ struct obstacle {
 };
 struct obstacle obs;
 
+//bullet vectors
 std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
+
+//enemy vectors
+std::vector<enemy> enemy_tracker{};
+std::vector<enemy> enemy_pool{};
 
 //Texture wabbit;
 
@@ -90,6 +102,13 @@ void UpdateGame() {//update variables and positions
 		player_pos = { player_pos.x, 0 };
 	}
 
+	//ENEMY MOVEMENT
+	//delete this trial code
+	float distance = sqrt((player_pos.x - obs.position.x) * (player_pos.x - obs.position.x) + (player_pos.y - obs.position.y) * (player_pos.y - obs.position.y));
+	if (obs.alive) {
+		obs.position = { (obs.position.x / distance) * 5, (obs.position.x / distance) * 5 };
+	}
+
 	//SHOOTING BULLETS
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
@@ -131,6 +150,7 @@ void UpdateGame() {//update variables and positions
 
 	//get the lenght of the bullet vector
 	int bullet_amount = bullet_tracker.size();
+	cout << bullet_amount;
 	//update bullet's position
 	for (int i = 0; i < bullet_amount; i++) {
 		bullet& b = bullet_tracker[i];
@@ -141,7 +161,7 @@ void UpdateGame() {//update variables and positions
 	for (int i = bullet_amount - 1; i >= 0; i--) {
 		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
 		if ((bullet_tracker[i].position.x <= 0 || bullet_tracker[i].position.x >= area_size || bullet_tracker[i].position.y <= 0 || bullet_tracker[i].position.x >= area_size)) { //&& bullet_tracker[i] != NULL
-			//save the bullet
+			//save the bullet in the pool
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
 			auto& j = bullet_tracker.begin() + i;
@@ -159,9 +179,13 @@ void UpdateGame() {//update variables and positions
 	
 	//bullet-enemies
 	//bullets-obstacles
+
+	bullet_amount = bullet_tracker.size();
+	
 	for (int i = bullet_amount - 1; i >= 0; i--) {
 		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, obs.position, tile_size / 2)) {
 			obs.alive = false;
+			//save the bullet in the pool
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
 			auto& j = bullet_tracker.begin() + i;
