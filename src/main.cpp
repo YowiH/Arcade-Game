@@ -149,6 +149,16 @@ void UpdateGame() {//update variables and positions
 
 	}
 
+	//COLLISIONS
+	//player-enemies
+	if (CheckCollisionCircles(player_pos, tile_size/2, obs.position, tile_size/2)) {
+		CloseWindow();
+	}
+	//player-obstacles
+	//bullet-enemies
+	//bullets_obstacles
+
+
 }
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
