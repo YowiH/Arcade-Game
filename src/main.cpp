@@ -55,11 +55,92 @@ std::vector<bullet> bullet_pool{};
 std::vector<enemy> enemy_tracker{};
 std::vector<enemy> enemy_pool{};
 
-//Texture wabbit;
+//TEXTURES
+//Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
+
+//player character
+Texture2D player_character_spritesheet;
+Texture2D player_character_death;
+
+//enemies
+Texture2D orc_spritesheet;
+Texture2D troll_spritesheet;
+Texture2D spyke_ball_spritesheet;
+Texture2D mushroom_spritesheet;
+Texture2D butterfly_spritesheet;
+Texture2D mummie_spritesheet;
+Texture2D imp_spritesheet;
+
+//cowboy
+Texture2D cowboy_spritesheet;
+Texture2D cowboy_dialog;
+
+//enemy damage & death animation
+Texture2D damaged_butterfly;
+Texture2D damaged_cowboy;
+Texture2D damaged_imp;
+Texture2D damaged_mummie;
+Texture2D damaged_mushroom;
+Texture2D damaged_troll;
+Texture2D damaged_spyke_ball;
+Texture2D death_animation_dungeon;
+Texture2D death_animation_enemy;
+Texture2D flyer_death_animation;
+
+//shop
+Texture2D ammunition;
+Texture2D guns;
+Texture2D boots;
+Texture2D shop_jeeper_spritesheet;
+Texture2D shop_blanket;
+
+//general terrain
+Texture2D bridge;
+
+//desert terrain
+Texture2D dirt_grass;
+Texture2D dirt;
+Texture2D dirt_stones;
+Texture2D path;
+Texture2D path_stones;
+Texture2D river_desert;
+Texture2D bush_spritesheet;
+Texture2D logs;
+
+//forest terrain
+Texture2D grass;
+Texture2D flowers_grass;
+Texture2D path_grass;
+Texture2D path_grass2;
+Texture2D tall_grass;
+Texture2D river_forest;
+Texture2D green_bush_spritesheet;
+Texture2D stump;
+
+//cementery terrain
+Texture2D cementery_floor;
+Texture2D cementery_gravel;
+Texture2D cementery_path;
+Texture2D stone_floor;
+Texture2D tombstone;
+
+//power ups
+Texture2D coffe;
+Texture2D coin;
+Texture2D coin_5;
+Texture2D extra_life;
+
+//UI
+Texture2D clock;
+
 
 void LoadAssets() {
 	//load all assets here please!!
 	//wabbit = LoadTexture("wabbit_alpha.png");
+	//Image image = LoadImage("resources/dirt_grass.png");
+	//dirt_grass = LoadTextureFromImage(image);
+	dirt_grass = LoadTexture("dirt_grass.png");
+	cout << "texture should be loaded" << endl;
 }
 void UnloadGame() {
 	//UnloadTexture(wabbit);
@@ -68,7 +149,7 @@ void InitGame() {
 	SetTargetFPS(60);
 	obs.color = RED;
 	obs.position = Vector2{ tile_size * 8, tile_size * 8 };
-	//LoadAssets();
+	LoadAssets();
 }
 void UpdateGame() {//update variables and positions
 	//MOVEMENT
@@ -104,11 +185,12 @@ void UpdateGame() {//update variables and positions
 
 	//ENEMY MOVEMENT
 	//delete this trial code
-	float distance = sqrt((player_pos.x - obs.position.x) * (player_pos.x - obs.position.x) + (player_pos.y - obs.position.y) * (player_pos.y - obs.position.y));
+	/*
+	float magnitude = sqrt((player_pos.x - obs.position.x) * (player_pos.x - obs.position.x) + (player_pos.y - obs.position.y) * (player_pos.y - obs.position.y));
 	if (obs.alive) {
-		obs.position = { (obs.position.x / distance) * 5, (obs.position.x / distance) * 5 };
+		obs.position = { obs.position.x + (player_pos.x - obs.position.x / magnitude) * 5, obs.position.y + (player_pos.y - obs.position.y / magnitude) * 5 };
 	}
-
+	*/
 	//SHOOTING BULLETS
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
@@ -183,7 +265,7 @@ void UpdateGame() {//update variables and positions
 	bullet_amount = bullet_tracker.size();
 	
 	for (int i = bullet_amount - 1; i >= 0; i--) {
-		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, obs.position, tile_size / 2)) {
+		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, obs.position, tile_size / 2) && obs.alive) {
 			obs.alive = false;
 			//save the bullet in the pool
 			bullet_pool.push_back(bullet_tracker[i]);
@@ -195,6 +277,11 @@ void UpdateGame() {//update variables and positions
 
 
 }
+
+void DrawMap(){
+	DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
+}
+
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
 	//draw background
@@ -213,6 +300,11 @@ void DrawGame() {//draws the game every frame
 	for (int i = 0; i < bullet_amount; i++) {
 		DrawRectangleV(bullet_tracker[i].position, { tile_size / 4, tile_size / 4 }, BLUE);
 	}
+
+	//draw map
+	DrawMap();
+	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
+
 
 	EndDrawing();
 }
