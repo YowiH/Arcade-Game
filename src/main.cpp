@@ -11,14 +11,23 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 #include <vector>
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
-int frame_counter = 0;
+int fire_frame_counter = 0;
 int fire_rate = 15;
+
+//animation
+int animation_frame_counter = 0;
+
+//bush
+bool bush_frame = 0;
+Rectangle bush_rec = { 0.0f, 0.0f, ()};
 
 const float tile_size = 32;
 const float area_size = tile_size * 16;
+const int NUMBER_OF_TILES = 256;
 
 Vector2 player_size{ tile_size, tile_size };
 Vector2 player_pos{ tile_size * 8, tile_size * 3 };
@@ -131,19 +140,21 @@ Texture2D coin_5;
 Texture2D extra_life;
 
 //UI
-Texture2D clock;
+//Texture2D clock;
 
 
 void LoadAssets() {
 	//load all assets here please!!
-	//wabbit = LoadTexture("wabbit_alpha.png");
-	//Image image = LoadImage("resources/dirt_grass.png");
-	//dirt_grass = LoadTextureFromImage(image);
 	dirt_grass = LoadTexture("dirt_grass.png");
-	cout << "texture should be loaded" << endl;
+	dirt = LoadTexture("dirt.png");
+	bush_spritesheet = LoadTexture("bush_spritesheet");
+	path = LoadTexture("path.png");
 }
 void UnloadGame() {
-	//UnloadTexture(wabbit);
+	UnloadTexture(dirt_grass);
+	UnloadTexture(dirt);
+	UnloadTexture(bush_spritesheet);
+	UnloadTexture(path);
 }
 void InitGame() {
 	SetTargetFPS(60);
@@ -185,12 +196,12 @@ void UpdateGame() {//update variables and positions
 
 	//ENEMY MOVEMENT
 	//delete this trial code
-	/*
+	
 	float magnitude = sqrt((player_pos.x - obs.position.x) * (player_pos.x - obs.position.x) + (player_pos.y - obs.position.y) * (player_pos.y - obs.position.y));
 	if (obs.alive) {
-		obs.position = { obs.position.x + (player_pos.x - obs.position.x / magnitude) * 5, obs.position.y + (player_pos.y - obs.position.y / magnitude) * 5 };
+		obs.position = { obs.position.x + ((player_pos.x - obs.position.x) / magnitude) * 5, obs.position.y + ((player_pos.y - obs.position.y) / magnitude) * 5 };
 	}
-	*/
+	
 	//SHOOTING BULLETS
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
@@ -207,7 +218,7 @@ void UpdateGame() {//update variables and positions
 	}
 
 	//create bullets
-	if ((Shoot_dir.x != 0 || Shoot_dir.y != 0) && frame_counter % fire_rate == 0) {
+	if ((Shoot_dir.x != 0 || Shoot_dir.y != 0) && fire_frame_counter % fire_rate == 0) {
 		//first look for bullets in the pool
 		if (bullet_pool.empty()) {
 			struct bullet b;
@@ -223,10 +234,10 @@ void UpdateGame() {//update variables and positions
 			bullet_tracker.back().velocity = Shoot_dir;
 			bullet_pool.pop_back();
 		}
-		frame_counter++;
+		fire_frame_counter++;
 	}
-	else if (frame_counter % fire_rate != 0) {
-		frame_counter++;
+	else if (fire_frame_counter % fire_rate != 0) {
+		fire_frame_counter++;
 	}
 	Shoot_dir = { 0, 0 };
 
@@ -275,17 +286,57 @@ void UpdateGame() {//update variables and positions
 		}
 	}
 
+	//ANIMATIONS
+	
+	//MAP
+	animation_frame_counter++;
 
+	//bush animation
+	if (animation_frame_counter >= 60) {//once per second
+		animation_frame_counter = 0;
+		bush_frame = !bush_frame;
+
+	}
 }
 
 void DrawMap(){
-	DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
+	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
+	//const char* text[NUMBER_OF_TILES];
+	char T;
+	ifstream area("AREAS/area1_1.txt");
+	
+	for (int i = 0; i < 16; i++) {
+		for (int j = 0; j < 16; j++) {
+			area.get(T);
+			switch (T) {
+			case 'D':
+				DrawTextureEx(dirt, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
+				break;
+			case 'P':
+				DrawTextureEx(path, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
+				break;
+			case 'B':
+				//DrawTextureEx
+				if (bush_frame == 0) {
+					Rectangle rec = { 0.0f, 0.0f, 16.0f, 16.0f };
+					DrawTextureRec(bush_spritesheet, rec, { tile_size * j, tile_size * i }, tile_size)
+				}
+				else {
+
+				}
+				break;
+			}
+		}
+	}
 }
 
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
 	//draw background
 	ClearBackground(RAYWHITE);
+
+	//draw map
+	DrawMap();
 
 	//draw player
 	DrawRectangleV(player_pos, player_size, BLACK);
@@ -300,10 +351,6 @@ void DrawGame() {//draws the game every frame
 	for (int i = 0; i < bullet_amount; i++) {
 		DrawRectangleV(bullet_tracker[i].position, { tile_size / 4, tile_size / 4 }, BLUE);
 	}
-
-	//draw map
-	DrawMap();
-	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
 
 
 	EndDrawing();
