@@ -23,7 +23,7 @@ int animation_frame_counter = 0;
 
 //bush
 bool bush_frame = 0;
-Rectangle bush_rec = { 0.0f, 0.0f, ()};
+//Rectangle bush_rec = { 0.0f, 0.0f, ()};
 
 const float tile_size = 32;
 const float area_size = tile_size * 16;
@@ -149,6 +149,7 @@ void LoadAssets() {
 	dirt = LoadTexture("dirt.png");
 	bush_spritesheet = LoadTexture("bush_spritesheet");
 	path = LoadTexture("path.png");
+	bridge = LoadTexture("bridge.png");
 }
 void UnloadGame() {
 	UnloadTexture(dirt_grass);
@@ -199,7 +200,7 @@ void UpdateGame() {//update variables and positions
 	
 	float magnitude = sqrt((player_pos.x - obs.position.x) * (player_pos.x - obs.position.x) + (player_pos.y - obs.position.y) * (player_pos.y - obs.position.y));
 	if (obs.alive) {
-		obs.position = { obs.position.x + ((player_pos.x - obs.position.x) / magnitude) * 5, obs.position.y + ((player_pos.y - obs.position.y) / magnitude) * 5 };
+		obs.position = { obs.position.x + ((player_pos.x - obs.position.x) / magnitude) * 2, obs.position.y + ((player_pos.y - obs.position.y) / magnitude) * 2 };
 	}
 	
 	//SHOOTING BULLETS
@@ -287,9 +288,8 @@ void UpdateGame() {//update variables and positions
 	}
 
 	//ANIMATIONS
-	
-	//MAP
 	animation_frame_counter++;
+	//MAP
 
 	//bush animation
 	if (animation_frame_counter >= 60) {//once per second
@@ -304,7 +304,13 @@ void DrawMap(){
 	//const char* text[NUMBER_OF_TILES];
 	char T;
 	ifstream area("AREAS/area1_1.txt");
-	
+	Rectangle src;
+	if (bush_frame == 0) {
+		src = { 0.0f, 0.0f, 16.0f, 16.0f };
+	}
+	else {
+		src = { 17.0f, 0.0f, 32.0f, 16.0f };
+	}
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 16; j++) {
 			area.get(T);
@@ -316,14 +322,13 @@ void DrawMap(){
 				DrawTextureEx(path, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
 				break;
 			case 'B':
-				//DrawTextureEx
-				if (bush_frame == 0) {
-					Rectangle rec = { 0.0f, 0.0f, 16.0f, 16.0f };
-					DrawTextureRec(bush_spritesheet, rec, { tile_size * j, tile_size * i }, tile_size)
-				}
-				else {
-
-				}
+				//DrawTextureEx(bush_spritesheet, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
+				//DrawTexturePro(bush_spritesheet, src, { 0.0f, 0.0f, tile_size, tile_size }, { tile_size * j, tile_size * i }, 0, WHITE);
+				DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { 0.0f, 0.0f, tile_size, tile_size }, { tile_size * j, tile_size * i }, 0, WHITE);
+				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { tile_size * j, tile_size * i }, {tile_size, tile_size }, 0, WHITE);
+				
+				break;
+			default:
 				break;
 			}
 		}
