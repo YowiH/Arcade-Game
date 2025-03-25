@@ -35,6 +35,28 @@ int player_Speed = 1;
 Vector2 Shoot_dir;
 int damage = 1;
 
+//CLASS HIERARCHY
+class GameObject {
+private:
+public:
+	Vector2 position;
+	Vector2 direction;
+	int speed;
+};
+class player_character : GameObject {
+public:
+	Vector2 shoot_dir;
+};
+class Bullet : GameObject {
+	int damage;
+};
+class enemy : GameObject {
+	int hp;
+};
+class orc : enemy {
+
+};
+
 struct bullet {
 	int speed = 5;
 	Vector2 velocity;
@@ -42,7 +64,7 @@ struct bullet {
 	int damage;
 };
 
-struct enemy {
+struct trial_enemy {
 	int speed = 5;
 	Vector2 velocity;
 	Vector2 position;
