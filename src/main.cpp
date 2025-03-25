@@ -70,6 +70,7 @@ std::vector<enemy> enemy_pool{};
 //player character
 Texture2D player_character_spritesheet;
 Texture2D player_character_death;
+Texture2D bullet_player;
 
 //enemies
 Texture2D orc_spritesheet;
@@ -150,6 +151,7 @@ void LoadAssets() {
 	bush_spritesheet = LoadTexture("bush_spritesheet");
 	path = LoadTexture("path.png");
 	bridge = LoadTexture("bridge.png");
+	bullet_player = LoadTexture("bullet.png");
 }
 void UnloadGame() {
 	UnloadTexture(dirt_grass);
@@ -324,7 +326,7 @@ void DrawMap(){
 			case 'B':
 				//DrawTextureEx(bush_spritesheet, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
 				//DrawTexturePro(bush_spritesheet, src, { 0.0f, 0.0f, tile_size, tile_size }, { tile_size * j, tile_size * i }, 0, WHITE);
-				DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { 0.0f, 0.0f, tile_size, tile_size }, { tile_size * j, tile_size * i }, 0, WHITE);
+				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { 0.0f, 0.0f, tile_size, tile_size }, { tile_size * j, tile_size * i }, 0, WHITE);
 				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { tile_size * j, tile_size * i }, {tile_size, tile_size }, 0, WHITE);
 				
 				break;
@@ -354,7 +356,8 @@ void DrawGame() {//draws the game every frame
 	//draw bullets
 	int bullet_amount = bullet_tracker.size();
 	for (int i = 0; i < bullet_amount; i++) {
-		DrawRectangleV(bullet_tracker[i].position, { tile_size / 4, tile_size / 4 }, BLUE);
+		//DrawRectangleV(bullet_tracker[i].position, { tile_size / 4, tile_size / 4 }, BLUE);
+		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size/16, WHITE);
 	}
 
 
