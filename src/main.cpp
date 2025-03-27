@@ -7,9 +7,6 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 
 */
 
-void ShowStartScreen();
-void ShowDeathScreen();
-void RestartGame();
 
 #include "raylib.h"
 using namespace std;
@@ -18,7 +15,6 @@ using namespace std;
 #include <vector>
 #include <cmath>
 #include <fstream>  
-
 
 int fire_frame_counter = 0;
 int fire_rate = 15;
@@ -36,21 +32,25 @@ const int NUMBER_OF_TILES = 256;
 Vector2 player_size{ tile_size, tile_size };
 Vector2 player_pos{tile_size*8, tile_size*3};
 int player_Speed = 1;
-Vector2 Shoot_dir = {0,0};
+Vector2 Shoot_dir;
 int damage = 1;
+
+
+//death + starter screens
 bool isDead = false;
 bool gameStarted = false;
-
-// death screen selection
 int selectedOption = 0;
+
+//life counter
+
 
 //class hierarchy
 class GameObject {
 	private:
 	public:
-	Vector2 position;
-	Vector2 direction;
-	int speed;
+		Vector2 position;
+		Vector2 direction;
+		int speed;
 };
 
 class player_character : GameObject{
@@ -58,6 +58,17 @@ class player_character : GameObject{
 	Vector2 shoot_dir;
 };
 
+class Bullet : GameObject {
+	int damage;
+};
+
+class Enemy : GameObject {
+	int hp;
+};
+
+class orc : Enemy {
+
+};
 
 struct bullet{
 	int speed = 5;
@@ -82,12 +93,12 @@ struct obsticle{
 struct obsticle obs;
 
 //bullet vectors
-std::vector<bullet> bullet_tracker{};
-std::vector<bullet> bullet_pool{};
+vector<bullet> bullet_tracker{};
+vector<bullet> bullet_pool{};
 
 //enemy vectors
-std::vector<enemy> enemy_tracker{};
-std::vector<enemy> enemy_pool{};
+vector<enemy> enemy_tracker{};
+vector<enemy> enemy_pool{};
 
 //start screen
 Texture2D titleScreen;
@@ -176,10 +187,6 @@ void LoadAssets(){
 	bullet_player = LoadTexture("bullet.png");
 	titleScreen = LoadTexture("title_screen.png");
 
-	if (titleScreen.width == 0 || titleScreen.height == 0) {
-    std::cout << "Error loading title screen!" << std::endl;
-	}
-
 }
 
 void UnloadGame(){
@@ -196,6 +203,11 @@ void InitGame() {
 	obs.position = Vector2{tile_size*8, tile_size *8};
 	LoadAssets();
 }
+
+void RestartGame();
+void ShowStartScreen();
+void ShowDeathScreen();
+
 void UpdateGame() {
 
 	if (!gameStarted) {
@@ -246,17 +258,18 @@ void UpdateGame() {
 
 	//shooting bullets
 	if (IsKeyDown(KEY_UP)) {
-		Shoot_dir.y = -1;
+		Shoot_dir = {Shoot_dir.x,-1};
 	}
 	else if (IsKeyDown(KEY_DOWN)) {
-		Shoot_dir.y = 1;
+		Shoot_dir = { Shoot_dir.x,1 };
 	}
 
 	if (IsKeyDown(KEY_RIGHT)) {
-		Shoot_dir.x = 1;
+		Shoot_dir = { 1,Shoot_dir.y };
+
 	}
 	else if (IsKeyDown(KEY_LEFT)) {
-		Shoot_dir.x = -1;
+		Shoot_dir = { -1,Shoot_dir.y };
 	}
 
 	//create bullets
@@ -265,7 +278,7 @@ void UpdateGame() {
 			struct bullet b;
 			b.damage = damage;
 			b.position = {player_pos.x + tile_size/2, player_pos.y + tile_size/2};
-			b.velocity = {Shoot_dir.x * b.speed, Shoot_dir.y * b.speed};
+			b.velocity = Shoot_dir;
 			bullet_tracker.push_back(b);
 		} else{
 			bullet_tracker.push_back(bullet_pool.back());
@@ -273,7 +286,6 @@ void UpdateGame() {
 			bullet_tracker.back().position = {player_pos.x + tile_size/2, player_pos.y + tile_size/2};
 			bullet_tracker.back().velocity = Shoot_dir;
 			bullet_pool.pop_back();
-
 		}
 		fire_frame_counter++;
 
@@ -292,10 +304,10 @@ void UpdateGame() {
 
 	//destroy bullet
 	for(int i = bullet_amount - 1; i >= 0; i--){
-		if((bullet_tracker[i].position.x <=0 || bullet_tracker[i].position.x >= area_size || bullet_tracker[i].position.y <= 0 || bullet_tracker[i].position.x >= area_size)){
+		if((bullet_tracker[i].position.x <= 0 || bullet_tracker[i].position.x >= area_size || bullet_tracker[i].position.y <= 0 || bullet_tracker[i].position.x >= area_size)){
 			bullet_pool.push_back(bullet_tracker[i]);
-
-			bullet_tracker.erase(bullet_tracker.begin() + i);
+			auto& j = bullet_tracker.begin() + i;
+			bullet_tracker.erase(j);
 		}
 	}
 
@@ -308,12 +320,15 @@ void UpdateGame() {
 	bullet_amount = bullet_tracker.size();
 
 	for(int i = bullet_amount - 1; i >= 0; i--){
-		if(CheckCollisionCircles(bullet_tracker[i].position, tile_size/4, obs.position, tile_size/2)){
+		if(CheckCollisionCircles(bullet_tracker[i].position, tile_size/4, obs.position, tile_size/2) && obs.alive){
 			obs.alive = false;
 			bullet_pool.push_back(bullet_tracker[i]);
-			bullet_tracker.erase(bullet_tracker.begin() + i);
+			auto& j = bullet_tracker.begin() + i;
+			bullet_tracker.erase(j);
 		}
 	}
+
+	animation_frame_counter++;
 
 	//animation
 	if(animation_frame_counter >= 60){
@@ -325,7 +340,7 @@ void UpdateGame() {
 
 void DrawMap(){
 	char T;
-	ifstream area("resources/AREAS/are1_1.txt");
+	ifstream area("AREAS/area1_1.txt");
 	Rectangle src;
 	if(bush_frame == 0){
 		src = {0.0f,0.0f,16.0f,16.0f};
@@ -359,7 +374,7 @@ void DrawGame() {//draws the game every frame
 		DrawRectangleV(obs.position, {tile_size, tile_size}, obs.color);
 	}
 	int bullet_amount = bullet_tracker.size();
-	for (int i = 0; i<bullet_amount; i++) {
+	for (int i = 0; i < bullet_amount; i++) {
 		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size / 16, WHITE);
 	}
 	EndDrawing();
@@ -386,8 +401,8 @@ void ShowStartScreen() {
 		}
     }
 	if (zoomCompleted && timerStarted) {
-        timer += GetFrameTime();  // Increment the timer by the frame time (time passed per frame)
-        if (timer >= 4.0f) {  // 5 seconds elapsed
+        timer += GetFrameTime();  // time passed per frame
+        if (timer >= 3.0f) {  //after 5 seconds...
             gameStarted = true;
         }
     }
@@ -399,8 +414,11 @@ void ShowStartScreen() {
 void ShowDeathScreen() {
     BeginDrawing();
     ClearBackground(BLACK);
-    DrawText("Restart", area_size / 2 - 50, area_size / 2 + 40, 20, (selectedOption == 0) ? RED : WHITE);
-    DrawText("Quit", area_size / 2 - 50, area_size / 2 + 80, 20, (selectedOption == 1) ? RED : WHITE);
+
+	DrawText("Game Over", area_size / 2 - 80, area_size / 2 - 40, 40, WHITE);
+
+    DrawText("Restart", area_size / 2 - 80, area_size / 2 + 40, 20, (selectedOption == 0) ? RED : WHITE);
+    DrawText("Quit", area_size / 2 - 80, area_size / 2 + 80, 20, (selectedOption == 1) ? RED : WHITE);
 
 	Vector2 arrowPos = {area_size / 2 - 70, area_size / 2 + 40 + (selectedOption * 40)};
     DrawTriangle(arrowPos, {arrowPos.x + 10, arrowPos.y - 5}, {arrowPos.x + 10, arrowPos.y + 5}, YELLOW);
