@@ -3,8 +3,10 @@
 #include <string>
 
 class Map {
+private:
+	std::string M;
 public:
 	Map(const char* F);
-private:
-	std :: string M;
+	std :: string getStr();
+
 };

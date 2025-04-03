@@ -12,13 +12,14 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
 #include <iostream>
 #include <string>
+#include "Map.h"
 
 using namespace std;
 
 int fire_frame_counter = 0;
 int fire_rate = 15;
 
-//animation
+//ANIMATIONS
 int animation_frame_counter = 0;
 
 //bush
@@ -34,6 +35,9 @@ Vector2 player_pos{ tile_size * 8, tile_size * 3 };
 int player_Speed = 1;
 Vector2 Shoot_dir;
 int damage = 1;
+
+//MAPS AND AREAS
+Map active_map;
 
 //CLASS HIERARCHY
 class GameObject {
@@ -183,6 +187,7 @@ void UnloadGame() {
 }
 void InitGame() {
 	SetTargetFPS(60);
+	active_map = Map("AREAS/area1_1.txt");
 	obs.color = RED;
 	obs.position = Vector2{ tile_size * 8, tile_size * 8 };
 	LoadAssets();
@@ -347,7 +352,7 @@ void DrawMap(){
 	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
 	//const char* text[NUMBER_OF_TILES];
 	int k = 0;
-	string M{ LoadFileText("AREAS/area1_1.txt") };
+	//string M{ LoadFileText("AREAS/area1_1.txt") };
 	Rectangle src;
 	if (bush_frame == 0) {
 		src = { 0.0f, 0.0f, 16.0f, 16.0f };
