@@ -42,7 +42,7 @@ bool gameStarted = false;
 int selectedOption = 0;
 
 //life counter
-
+int player_life = 1;
 
 //class hierarchy
 class GameObject {
@@ -186,6 +186,8 @@ void LoadAssets(){
 	bridge = LoadTexture("bridge.png");
 	bullet_player = LoadTexture("bullet.png");
 	titleScreen = LoadTexture("title_screen.png");
+	extra_life = LoadTexture("extra_life.png");
+	coin = LoadTexture("coin.png");
 
 }
 
@@ -195,6 +197,7 @@ void UnloadGame(){
 	UnloadTexture(bush_spritesheet);
 	UnloadTexture(path);
 	UnloadTexture(titleScreen);
+	UnloadTexture(extra_life);
 }
 
 void InitGame() {
@@ -235,14 +238,14 @@ void UpdateGame() {
 	}
 
 	//x axis limits
-	if (player_pos.x > area_size - tile_size) {
-		player_pos = { area_size - tile_size, player_pos.y };
+	if (player_pos.x > area_size + (tile_size * 3)) {
+		player_pos = { area_size + (tile_size * 3), player_pos.y};
 	}
-	else if(player_pos.x < 0) {
-		player_pos = { 0, player_pos.y };
+	else if(player_pos.x < tile_size * 3) {
+		player_pos = { tile_size * 3, player_pos.y };
 	}
 	//y axis limits
-	if (player_pos.y > area_size - tile_size) {
+	if (player_pos.y > area_size + tile_size) {
 		player_pos = { player_pos.x, area_size - tile_size };
 	}
 	else if (player_pos.y < 0) {
@@ -314,7 +317,10 @@ void UpdateGame() {
 	//colisions
 	//player-enemies
 	if(CheckCollisionCircles(player_pos, tile_size/2, obs.position, tile_size/2) && obs.alive){
-		isDead = true;
+		player_life--;
+		if (player_life <= 0) {
+			isDead = true;
+		}
 	}
 
 	bullet_amount = bullet_tracker.size();
@@ -352,10 +358,10 @@ void DrawMap(){
 			area.get(T);
 			switch(T){
 			case 'D':
-				DrawTextureEx(dirt, {tile_size * j, tile_size*i}, 0, tile_size/16, WHITE);
+				DrawTextureEx(dirt, {tile_size * j + (tile_size  * 3), tile_size * i + tile_size  }, 0, tile_size / 16, WHITE);
 				break;
 			case 'P':
-				DrawTextureEx(path, {tile_size * j, tile_size*i}, 0, tile_size/16, WHITE);
+				DrawTextureEx(path, {tile_size * j + (tile_size * 3), tile_size*i + tile_size}, 0, tile_size/16, WHITE);
 				break;
 			case 'B':
 				break;
@@ -364,12 +370,13 @@ void DrawMap(){
 			}
 		}
 	}
+	
 }
-void DrawGame() {//draws the game every frame
+void DrawGame() { //draws the game every frame
 	BeginDrawing();
-	ClearBackground(RAYWHITE);
+	ClearBackground(BLACK);
 	DrawMap();
-	DrawRectangleV(player_pos, player_size, BLACK);
+	DrawRectangleV(player_pos, player_size, BLUE);
 	if(obs.alive){
 		DrawRectangleV(obs.position, {tile_size, tile_size}, obs.color);
 	}
@@ -377,6 +384,11 @@ void DrawGame() {//draws the game every frame
 	for (int i = 0; i < bullet_amount; i++) {
 		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size / 16, WHITE);
 	}
+	DrawTextureEx(extra_life, { tile_size, tile_size * 3 }, 0, tile_size / 16, WHITE);
+	DrawText(" x",  tile_size * 2, (tile_size * 3 + (tile_size/4)), tile_size/2, WHITE);
+	DrawTextureEx(coin, { tile_size, tile_size * 4 }, 0, tile_size / 16, WHITE);
+	DrawText(" x", tile_size * 2, (tile_size * 4 + (tile_size / 4)), tile_size / 2, WHITE);
+
 	EndDrawing();
 }
 
@@ -466,7 +478,7 @@ int main ()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(area_size, area_size, "Journey of the Prairie King");
+	InitWindow(area_size + tile_size * 2, area_size + tile_size, "Journey of the Prairie King");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("../../resources");
