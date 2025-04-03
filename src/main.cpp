@@ -11,7 +11,7 @@ by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit h
 #include <vector>
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
 #include <iostream>
-#include <fstream>
+#include <string>
 
 using namespace std;
 
@@ -187,9 +187,8 @@ void InitGame() {
 	obs.position = Vector2{ tile_size * 8, tile_size * 8 };
 	LoadAssets();
 }
-void UpdateGame() {//update variables and positions
-	//MOVEMENT
 
+void PlayerMovement() {
 	if (IsKeyDown('A')) {
 		player_pos = { player_pos.x - 5, player_pos.y };
 	}
@@ -205,11 +204,11 @@ void UpdateGame() {//update variables and positions
 	}
 
 	//x axis limits
-	if (player_pos.x > area_size - tile_size) {
-		player_pos = { area_size - tile_size, player_pos.y };
+	if (player_pos.x > area_size + (tile_size)) {
+		player_pos = { area_size + (tile_size), player_pos.y };
 	}
-	else if (player_pos.x < 0) {
-		player_pos = { 0, player_pos.y };
+	else if (player_pos.x < (tile_size * 4)) {
+		player_pos = { (tile_size * 4), player_pos.y };
 	}
 	//y axis limits
 	if (player_pos.y > area_size - tile_size) {
@@ -218,16 +217,18 @@ void UpdateGame() {//update variables and positions
 	else if (player_pos.y < 0) {
 		player_pos = { player_pos.x, 0 };
 	}
+}
 
-	//ENEMY MOVEMENT
+void enemyMovement() {
 	//delete this trial code
-	
+
 	float magnitude = sqrt((player_pos.x - obs.position.x) * (player_pos.x - obs.position.x) + (player_pos.y - obs.position.y) * (player_pos.y - obs.position.y));
 	if (obs.alive) {
 		obs.position = { obs.position.x + ((player_pos.x - obs.position.x) / magnitude) * 2, obs.position.y + ((player_pos.y - obs.position.y) / magnitude) * 2 };
 	}
-	
-	//SHOOTING BULLETS
+}
+
+void bulletShooting() {
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
 		Shoot_dir = { Shoot_dir.x, -1 };
@@ -265,10 +266,10 @@ void UpdateGame() {//update variables and positions
 		fire_frame_counter++;
 	}
 	Shoot_dir = { 0, 0 };
+}
 
+void bulletUpdate(int bullet_amount) {
 	//get the lenght of the bullet vector
-	int bullet_amount = bullet_tracker.size();
-	cout << bullet_amount;
 	//update bullet's position
 	for (int i = 0; i < bullet_amount; i++) {
 		bullet& b = bullet_tracker[i];
@@ -287,19 +288,16 @@ void UpdateGame() {//update variables and positions
 		}
 
 	}
+}
 
-	//COLLISIONS
-	//player-enemies
-	if (CheckCollisionCircles(player_pos, tile_size/2, obs.position, tile_size/2) && obs.alive) {
+//COLLISIONS
+void player_enemyColl() {
+	if (CheckCollisionCircles(player_pos, tile_size / 2, obs.position, tile_size / 2) && obs.alive) {
 		cout << "you are dead" << endl;
 	}
-	//player-obstacles
-	
-	//bullet-enemies
-	//bullets-obstacles
+}
 
-	bullet_amount = bullet_tracker.size();
-	
+void bullet_obsticleColl(int bullet_amount) {
 	for (int i = bullet_amount - 1; i >= 0; i--) {
 		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, obs.position, tile_size / 2) && obs.alive) {
 			obs.alive = false;
@@ -310,13 +308,35 @@ void UpdateGame() {//update variables and positions
 			bullet_tracker.erase(j);
 		}
 	}
+}
+
+void UpdateGame() {//update variables and positions
+	//MOVEMENT
+	PlayerMovement();
+	//ENEMY MOVEMENT
+	enemyMovement();
+	//SHOOTING BULLETS
+	bulletShooting();
+
+	//update bullets
+	bulletUpdate(bullet_tracker.size());
+
+	//COLLISIONS
+	//player-enemies
+	player_enemyColl();
+	//player-obstacles
+	
+	//bullet-enemies
+	// 
+	//bullets-obstacles
+	bullet_obsticleColl(bullet_tracker.size());
 
 	//ANIMATIONS
 	animation_frame_counter++;
 	//MAP
 
 	//bush animation
-	if (animation_frame_counter >= 60) {//once per second
+	if (animation_frame_counter % 60 == 0) {//once per second
 		animation_frame_counter = 0;
 		bush_frame = !bush_frame;
 
@@ -326,8 +346,8 @@ void UpdateGame() {//update variables and positions
 void DrawMap(){
 	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
 	//const char* text[NUMBER_OF_TILES];
-	char T;
-	ifstream area("AREAS/area1_1.txt");
+	int k = 0;
+	string M{ LoadFileText("AREAS/area1_1.txt") };
 	Rectangle src;
 	if (bush_frame == 0) {
 		src = { 0.0f, 0.0f, 16.0f, 16.0f };
@@ -337,13 +357,12 @@ void DrawMap(){
 	}
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 16; j++) {
-			area.get(T);
-			switch (T) {
+			switch (M[k]) {
 			case 'D':
-				DrawTextureEx(dirt, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
+				DrawTextureEx(dirt, { tile_size * j + (tile_size * 3), tile_size * i + tile_size}, 0, tile_size / 16, WHITE);
 				break;
 			case 'P':
-				DrawTextureEx(path, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
+				DrawTextureEx(path, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
 				break;
 			case 'B':
 				//DrawTextureEx(bush_spritesheet, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
@@ -355,6 +374,7 @@ void DrawMap(){
 			default:
 				break;
 			}
+			k++;
 		}
 	}
 }
@@ -403,7 +423,7 @@ int main()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(area_size, area_size, "Journey of the prairie king");
+	InitWindow(area_size + (tile_size * 3), area_size + tile_size, "Journey of the prairie king");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
