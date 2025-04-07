@@ -2,7 +2,6 @@
 #define BULLET_H
 
 #include "raylib.h"
-#include <vector>
 
 class Bullet {
 public:
@@ -10,6 +9,7 @@ public:
     Vector2 velocity;
     Vector2 position;
     int damage;
+    void loadAssets();
 };
 
 #endif

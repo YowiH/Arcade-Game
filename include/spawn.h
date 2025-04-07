@@ -2,7 +2,6 @@
 #define SPAWN_H
 
 #include <vector>
-
 #include "bullet.h"
 #include "enemy.h"
 

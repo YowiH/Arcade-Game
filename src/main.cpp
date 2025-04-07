@@ -6,13 +6,13 @@ int main() {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
     InitWindow(512, 512, "Journey of the Prairie King");
     SearchAndSetResourceDir("resources");
-    InitGame();
+    Game::InitGame();
 
     while (!WindowShouldClose()) {
-        UpdateDrawFrame();
+        Game::UpdateDrawFrame();
     }
 
-    UnloadGame();
+    Game::UnloadGame();
     CloseWindow();
     return 0;
 }
