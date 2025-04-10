@@ -2,7 +2,7 @@
 Map::Map(const char* F) {
 	M = LoadFileText(F);
 }
-std :: string getStr() {
-		return M;
-}
+std::string Map::getStr()
+{
+	return M;
 }

@@ -30,11 +30,15 @@ const float tile_size = 32;
 const float area_size = tile_size * 16;
 const int NUMBER_OF_TILES = 256;
 
+//player varaibles
 Vector2 player_size{ tile_size, tile_size };
 Vector2 player_pos{ tile_size * 8, tile_size * 3 };
 int player_Speed = 1;
 Vector2 Shoot_dir;
 int damage = 1;
+bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
+
+
 
 //MAPS AND AREAS
 Map active_map;
@@ -75,12 +79,16 @@ struct trial_enemy {
 	int hp;
 };
 
-struct obstacle {
+struct trial_obs {
 	bool alive = true;
 	Vector2 position;
 	Color color;
 };
-struct obstacle obs;
+
+struct Obsticle {
+	Rectangle rec;
+};
+struct trial_obs tri;
 
 //bullet vectors
 std::vector<bullet> bullet_tracker{};
@@ -89,6 +97,10 @@ std::vector<bullet> bullet_pool{};
 //enemy vectors
 std::vector<enemy> enemy_tracker{};
 std::vector<enemy> enemy_pool{};
+
+//obstacle vector
+std::vector<Obsticle> obsticle_tracker{};
+std::vector<Obsticle> obsticle_pool{};
 
 //TEXTURES
 //Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
@@ -178,33 +190,35 @@ void LoadAssets() {
 	path = LoadTexture("path.png");
 	bridge = LoadTexture("bridge.png");
 	bullet_player = LoadTexture("bullet.png");
+	logs = LoadTexture("logs.png");
 }
 void UnloadGame() {
 	UnloadTexture(dirt_grass);
 	UnloadTexture(dirt);
 	UnloadTexture(bush_spritesheet);
 	UnloadTexture(path);
+	UnloadTexture(logs);
 }
 void InitGame() {
 	SetTargetFPS(60);
 	active_map = Map("AREAS/area1_1.txt");
-	obs.color = RED;
-	obs.position = Vector2{ tile_size * 8, tile_size * 8 };
+	tri.color = RED;
+	tri.position = Vector2{ tile_size * 8, tile_size * 8 };
 	LoadAssets();
 }
 
 void PlayerMovement() {
-	if (IsKeyDown('A')) {
+	if (IsKeyDown('A') && !xNegBlock) {
 		player_pos = { player_pos.x - 5, player_pos.y };
 	}
-	else if (IsKeyDown('D')) {
+	else if (IsKeyDown('D') && !xPosBlock) {
 		player_pos = { player_pos.x + 5, player_pos.y };
 	}
 
-	if (IsKeyDown('S')) {
+	if (IsKeyDown('S') && !yPosBlock) {
 		player_pos = { player_pos.x, player_pos.y + 5 };
 	}
-	else if (IsKeyDown('W')) {
+	else if (IsKeyDown('W') && !yNegBlock) {
 		player_pos = { player_pos.x, player_pos.y - 5 };
 	}
 
@@ -222,14 +236,19 @@ void PlayerMovement() {
 	else if (player_pos.y < 0) {
 		player_pos = { player_pos.x, 0 };
 	}
+	//restart block variables
+	xPosBlock = false;
+	xNegBlock = false;
+	yPosBlock = false;
+	yNegBlock = false;
 }
 
 void enemyMovement() {
 	//delete this trial code
 
-	float magnitude = sqrt((player_pos.x - obs.position.x) * (player_pos.x - obs.position.x) + (player_pos.y - obs.position.y) * (player_pos.y - obs.position.y));
-	if (obs.alive) {
-		obs.position = { obs.position.x + ((player_pos.x - obs.position.x) / magnitude) * 2, obs.position.y + ((player_pos.y - obs.position.y) / magnitude) * 2 };
+	float magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
+	if (tri.alive) {
+		tri.position = { tri.position.x + ((player_pos.x - tri.position.x) / magnitude) * 2, tri.position.y + ((player_pos.y - tri.position.y) / magnitude) * 2 };
 	}
 }
 
@@ -297,15 +316,46 @@ void bulletUpdate(int bullet_amount) {
 
 //COLLISIONS
 void player_enemyColl() {
-	if (CheckCollisionCircles(player_pos, tile_size / 2, obs.position, tile_size / 2) && obs.alive) {
+	if (CheckCollisionCircles(player_pos, tile_size / 2, tri.position, tile_size / 2) && tri.alive) {
 		cout << "you are dead" << endl;
+	}
+}
+
+void restrainPlayerMovement(float obsPosX, float obsPosY) {
+	//bloquejar mov dreta
+	if (player_pos.x + tile_size >= obsPosX) {
+		xPosBlock = true;
+	}
+	//bloquejar mov esquerra
+	else if (player_pos.x - tile_size <= obsPosX) {
+		xNegBlock = true;
+	}
+	//bloquejar mov down
+	else if (player_pos.y + tile_size >= obsPosY) {
+		xPosBlock = true;
+	}
+	//bloquejar mov up
+	else {
+		xNegBlock = true;
+	}
+
+
+}
+
+void player_obsticleColl() {
+	//check all obsticle colliders
+	Rectangle rec_player = { player_pos.x, player_pos.y, tile_size, tile_size };
+	for (int i = 0; i < obsticle_tracker.size(); i++) {
+		if (CheckCollisionRecs(rec_player, obsticle_tracker[i].rec)) {
+			restrainPlayerMovement(obsticle_tracker[i].rec.x, obsticle_tracker[i].rec.y);
+		}
 	}
 }
 
 void bullet_obsticleColl(int bullet_amount) {
 	for (int i = bullet_amount - 1; i >= 0; i--) {
-		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, obs.position, tile_size / 2) && obs.alive) {
-			obs.alive = false;
+		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, tri.position, tile_size / 2) && tri.alive) {
+			tri.alive = false;
 			//save the bullet in the pool
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
@@ -329,7 +379,9 @@ void UpdateGame() {//update variables and positions
 	//COLLISIONS
 	//player-enemies
 	player_enemyColl();
+
 	//player-obstacles
+	player_obsticleColl();
 	
 	//bullet-enemies
 	// 
@@ -348,6 +400,16 @@ void UpdateGame() {//update variables and positions
 	}
 }
 
+
+void positionObsticle(float posX, float posY) {
+	if (obsticle_pool.empty()) {
+		Obsticle obs;
+		obs.rec = {posX, posY, tile_size, tile_size};
+		obsticle_tracker.push_back(obs);
+	}
+	//afegir codi de bullet pool
+}
+
 void DrawMap(){
 	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
 	//const char* text[NUMBER_OF_TILES];
@@ -362,7 +424,7 @@ void DrawMap(){
 	}
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 16; j++) {
-			switch (M[k]) {
+			switch (active_map.getStr()[k]) {
 			case 'D':
 				DrawTextureEx(dirt, { tile_size * j + (tile_size * 3), tile_size * i + tile_size}, 0, tile_size / 16, WHITE);
 				break;
@@ -376,6 +438,10 @@ void DrawMap(){
 				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { tile_size * j, tile_size * i }, {tile_size, tile_size }, 0, WHITE);
 				
 				break;
+			case 'O':
+				DrawTextureEx(logs, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+				positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+				break;
 			default:
 				break;
 			}
@@ -387,7 +453,7 @@ void DrawMap(){
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
 	//draw background
-	ClearBackground(RAYWHITE);
+	ClearBackground(BLACK);
 
 	//draw map
 	DrawMap();
@@ -396,8 +462,8 @@ void DrawGame() {//draws the game every frame
 	DrawRectangleV(player_pos, player_size, BLACK);
 
 	//draw obstacle
-	if (obs.alive) {
-		DrawRectangleV(obs.position, { tile_size, tile_size }, obs.color);
+	if (tri.alive) {
+		DrawRectangleV(tri.position, { tile_size, tile_size }, tri.color);
 	}
 
 	//draw bullets
