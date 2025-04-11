@@ -323,20 +323,20 @@ void player_enemyColl() {
 
 void restrainPlayerMovement(float obsPosX, float obsPosY) {
 	//bloquejar mov dreta
-	if (player_pos.x + tile_size >= obsPosX) {
+	if (player_pos.x <= obsPosX) { //pitagoras bby
 		xPosBlock = true;
 	}
 	//bloquejar mov esquerra
-	else if (player_pos.x - tile_size <= obsPosX) {
+	else if (player_pos.x >= obsPosX) {
 		xNegBlock = true;
 	}
 	//bloquejar mov down
-	else if (player_pos.y + tile_size >= obsPosY) {
-		xPosBlock = true;
+	else if (player_pos.y <= obsPosY) {
+		yPosBlock = true;
 	}
 	//bloquejar mov up
 	else {
-		xNegBlock = true;
+		yNegBlock = true;
 	}
 
 
