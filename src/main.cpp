@@ -322,7 +322,7 @@ void bulletUpdate(int bullet_amount) {
 	//destroy bullets
 	for (int i = bullet_amount - 1; i >= 0; i--) {
 		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
-		if ((bullet_tracker[i].position.x <= 0 || bullet_tracker[i].position.x >= area_size || bullet_tracker[i].position.y <= 0 || bullet_tracker[i].position.x >= area_size)) { //&& bullet_tracker[i] != NULL
+		if ((bullet_tracker[i].position.x <= tile_size * 3 || bullet_tracker[i].position.x >= area_size + (tile_size * 3) || bullet_tracker[i].position.y <= tile_size || bullet_tracker[i].position.y >= area_size + tile_size)) { //&& bullet_tracker[i] != NULL
 			//save the bullet in the pool
 			bullet_pool.push_back(bullet_tracker[i]);
 			//borrar bullet
