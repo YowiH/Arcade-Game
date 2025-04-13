@@ -23,9 +23,9 @@ const float area_size = tile_size * 16;
 const int NUMBER_OF_TILES = 256;
 
 //player varaibles
-Vector2 player_size{ tile_size, tile_size };
+Vector2 player_size{ tile_size, tile_size};
 Vector2 player_pos{ tile_size * 8, tile_size * 3 };
-int player_Speed = 1;
+int player_Speed = 2;
 Vector2 Shoot_dir;
 int Mov_dir;
 int anim_dir;
@@ -54,10 +54,10 @@ public:
 class Bullet : GameObject {
 	int damage;
 };
-class enemy : GameObject {
+class Enemy : GameObject {
 	int hp;
 };
-class orc : enemy {
+class orc : Enemy {
 
 };
 
@@ -68,8 +68,8 @@ struct bullet {
 	int damage;
 };
 
-struct trial_enemy {
-	int speed = 5;
+struct enemy {
+	int speed = 1;
 	Vector2 velocity;
 	Vector2 position;
 	int hp;
@@ -235,20 +235,20 @@ void InitGame() {
 void PlayerMovement() {
 	//Mov_dir = 0;
 	if (IsKeyDown('A') && !xNegBlock) {
-		player_pos = { player_pos.x - 5, player_pos.y };
+		player_pos = { player_pos.x - player_Speed, player_pos.y };
 		Mov_dir = 3;
 	}
 	else if (IsKeyDown('D') && !xPosBlock) {
-		player_pos = { player_pos.x + 5, player_pos.y };
+		player_pos = { player_pos.x + player_Speed, player_pos.y };
 		Mov_dir = 1;
 	}
 
 	if (IsKeyDown('S') && !yPosBlock) {
-		player_pos = { player_pos.x, player_pos.y + 5 };
+		player_pos = { player_pos.x, player_pos.y + player_Speed };
 		Mov_dir = 2;
 	}
 	else if (IsKeyDown('W') && !yNegBlock) {
-		player_pos = { player_pos.x, player_pos.y - 5 };
+		player_pos = { player_pos.x, player_pos.y - player_Speed };
 		Mov_dir = 4;
 	}
 	
@@ -275,8 +275,13 @@ void PlayerMovement() {
 
 void enemyMovement() {
 	//delete this trial code
-
-	float magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
+	float magnitude;
+	for (int i = 0; i < enemy_tracker.size(); i++) {
+		magnitude = sqrt((player_pos.x - enemy_tracker[i].position.x) * (player_pos.x - enemy_tracker[i].position.x) + (player_pos.y - enemy_tracker[i].position.y) * (player_pos.y - enemy_tracker[i].position.y));
+		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
+	}
+	magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
+	
 	if (tri.alive) {
 		tri.position = { tri.position.x + ((player_pos.x - tri.position.x) / magnitude) * 2, tri.position.y + ((player_pos.y - tri.position.y) / magnitude) * 2 };
 	}
