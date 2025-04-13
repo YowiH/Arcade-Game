@@ -186,7 +186,7 @@ void LoadAssets() {
 	//load all assets here please!!
 	dirt_grass = LoadTexture("dirt_grass.png");
 	dirt = LoadTexture("dirt.png");
-	bush_spritesheet = LoadTexture("bush_spritesheet");
+	bush_spritesheet = LoadTexture("bush_spritesheet.png");
 	path = LoadTexture("path.png");
 	bridge = LoadTexture("bridge.png");
 	bullet_player = LoadTexture("bullet.png");
@@ -417,10 +417,10 @@ void DrawMap(){
 	//string M{ LoadFileText("AREAS/area1_1.txt") };
 	Rectangle src;
 	if (bush_frame == 0) {
-		src = { 0.0f, 0.0f, 16.0f, 16.0f };
+		src = { 0.0f, 0.0f, tile_size , tile_size };
 	}
 	else {
-		src = { 17.0f, 0.0f, 32.0f, 16.0f };
+		src = { 17.0f, 0.0f, tile_size, tile_size };
 	}
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 16; j++) {
@@ -432,10 +432,10 @@ void DrawMap(){
 				DrawTextureEx(path, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
 				break;
 			case 'B':
-				//DrawTextureEx(bush_spritesheet, { tile_size * j, tile_size * i }, 0, tile_size / 16, WHITE);
-				//DrawTexturePro(bush_spritesheet, src, { 0.0f, 0.0f, tile_size, tile_size }, { tile_size * j, tile_size * i }, 0, WHITE);
-				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { 0.0f, 0.0f, tile_size, tile_size }, { tile_size * j, tile_size * i }, 0, WHITE);
-				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { tile_size * j, tile_size * i }, {tile_size, tile_size }, 0, WHITE);
+				
+				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size * 2, tile_size * 2}, {0,0}, 0, WHITE);
+				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, {0, 0}, 0, WHITE);
+				
 				
 				break;
 			case 'O':
