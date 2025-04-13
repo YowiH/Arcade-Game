@@ -1,12 +1,3 @@
-/*
-Raylib example file.
-This is an example main file for a simple raylib project.
-Use this as a starting point or replace it with your code.
-
-by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
-
-*/
-
 #include "raylib.h"
 #include <vector>
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
@@ -181,9 +172,13 @@ Texture2D extra_life;
 //UI
 //Texture2D clock;
 
+//SOUND & MUSIC
+//fx
+Sound shoot_fx;
+
 
 void LoadAssets() {
-	//load all assets here please!!
+	//TEXTURES
 	dirt_grass = LoadTexture("dirt_grass.png");
 	dirt = LoadTexture("dirt.png");
 	bush_spritesheet = LoadTexture("bush_spritesheet.png");
@@ -191,19 +186,33 @@ void LoadAssets() {
 	bridge = LoadTexture("bridge.png");
 	bullet_player = LoadTexture("bullet.png");
 	logs = LoadTexture("logs.png");
+
+	//SOUND
+	shoot_fx = LoadSound("shoot1.mp3");
+	//MUSIC
+
 }
 void UnloadGame() {
+	//textures
 	UnloadTexture(dirt_grass);
 	UnloadTexture(dirt);
 	UnloadTexture(bush_spritesheet);
 	UnloadTexture(path);
 	UnloadTexture(logs);
+
+	//sounds
+	UnloadSound(shoot_fx);
+
+	CloseAudioDevice;
 }
 void InitGame() {
 	SetTargetFPS(60);
 	active_map = Map("AREAS/area1_1.txt");
+
+	//delete next two lines when done with trials
 	tri.color = RED;
 	tri.position = Vector2{ tile_size * 8, tile_size * 8 };
+	InitAudioDevice();
 	LoadAssets();
 }
 
@@ -233,8 +242,8 @@ void PlayerMovement() {
 	if (player_pos.y > area_size - tile_size) {
 		player_pos = { player_pos.x, area_size - tile_size };
 	}
-	else if (player_pos.y < 0) {
-		player_pos = { player_pos.x, 0 };
+	else if (player_pos.y < tile_size*2) {
+		player_pos = { player_pos.x, tile_size*2 };
 	}
 	//restart block variables
 	xPosBlock = false;
@@ -270,6 +279,7 @@ void bulletShooting() {
 	//create bullets
 	if ((Shoot_dir.x != 0 || Shoot_dir.y != 0) && fire_frame_counter % fire_rate == 0) {
 		//first look for bullets in the pool
+		PlaySound(shoot_fx);
 		if (bullet_pool.empty()) {
 			struct bullet b;
 			b.damage = damage;
@@ -417,10 +427,10 @@ void DrawMap(){
 	//string M{ LoadFileText("AREAS/area1_1.txt") };
 	Rectangle src;
 	if (bush_frame == 0) {
-		src = { 0.0f, 0.0f, tile_size , tile_size };
+		src = { 0.0f, 0.0f, 16.0f, 16.0f }; //tile_size , tile_size
 	}
 	else {
-		src = { 17.0f, 0.0f, tile_size, tile_size };
+		src = { 17.0f, 0.0f, 16.0f, 16.0f }; //tile_size , tile_size
 	}
 	for (int i = 0; i < 16; i++) {
 		for (int j = 0; j < 16; j++) {
@@ -433,8 +443,7 @@ void DrawMap(){
 				break;
 			case 'B':
 				
-				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size * 2, tile_size * 2}, {0,0}, 0, WHITE);
-				//DrawTexturePro(bridge, { 0.0f, 0.0f, 16.0f, 16.0f }, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, {0, 0}, 0, WHITE);
+				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size}, {0,0}, 0, WHITE);
 				
 				
 				break;
