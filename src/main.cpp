@@ -176,6 +176,9 @@ Texture2D extra_life;
 //fx
 Sound shoot_fx;
 
+//music
+Music main_theme;
+
 
 void LoadAssets() {
 	//TEXTURES
@@ -190,6 +193,7 @@ void LoadAssets() {
 	//SOUND
 	shoot_fx = LoadSound("shoot1.mp3");
 	//MUSIC
+	main_theme = LoadMusicStream("JOTPK_song.wav");
 
 }
 void UnloadGame() {
@@ -203,6 +207,9 @@ void UnloadGame() {
 	//sounds
 	UnloadSound(shoot_fx);
 
+	//music
+	UnloadMusicStream(main_theme);
+
 	CloseAudioDevice;
 }
 void InitGame() {
@@ -214,6 +221,8 @@ void InitGame() {
 	tri.position = Vector2{ tile_size * 8, tile_size * 8 };
 	InitAudioDevice();
 	LoadAssets();
+	//start playing music
+	PlayMusicStream(main_theme);
 }
 
 void PlayerMovement() {
@@ -376,6 +385,10 @@ void bullet_obsticleColl(int bullet_amount) {
 }
 
 void UpdateGame() {//update variables and positions
+
+	//MUSIC
+	UpdateMusicStream(main_theme);
+
 	//MOVEMENT
 	PlayerMovement();
 	//ENEMY MOVEMENT
