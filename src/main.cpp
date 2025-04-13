@@ -11,6 +11,7 @@ int fire_frame_counter = 0;
 int fire_rate = 15;
 
 //ANIMATIONS
+Rectangle src;
 int animation_frame_counter = 0;
 
 //bush
@@ -26,6 +27,10 @@ Vector2 player_size{ tile_size, tile_size };
 Vector2 player_pos{ tile_size * 8, tile_size * 3 };
 int player_Speed = 1;
 Vector2 Shoot_dir;
+int Mov_dir;
+int anim_dir;
+int player_walk_anim_counter = 0;
+bool right_foot;
 int damage = 1;
 bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
 
@@ -189,6 +194,7 @@ void LoadAssets() {
 	bridge = LoadTexture("bridge.png");
 	bullet_player = LoadTexture("bullet.png");
 	logs = LoadTexture("logs.png");
+	player_character_spritesheet = LoadTexture("player_character_spritesheet.png");
 
 	//SOUND
 	shoot_fx = LoadSound("shoot1.mp3");
@@ -203,6 +209,7 @@ void UnloadGame() {
 	UnloadTexture(bush_spritesheet);
 	UnloadTexture(path);
 	UnloadTexture(logs);
+	UnloadTexture(player_character_spritesheet);
 
 	//sounds
 	UnloadSound(shoot_fx);
@@ -226,20 +233,25 @@ void InitGame() {
 }
 
 void PlayerMovement() {
+	//Mov_dir = 0;
 	if (IsKeyDown('A') && !xNegBlock) {
 		player_pos = { player_pos.x - 5, player_pos.y };
+		Mov_dir = 3;
 	}
 	else if (IsKeyDown('D') && !xPosBlock) {
 		player_pos = { player_pos.x + 5, player_pos.y };
+		Mov_dir = 1;
 	}
 
 	if (IsKeyDown('S') && !yPosBlock) {
 		player_pos = { player_pos.x, player_pos.y + 5 };
+		Mov_dir = 2;
 	}
 	else if (IsKeyDown('W') && !yNegBlock) {
 		player_pos = { player_pos.x, player_pos.y - 5 };
+		Mov_dir = 4;
 	}
-
+	
 	//x axis limits
 	if (player_pos.x > area_size + (tile_size)) {
 		player_pos = { area_size + (tile_size), player_pos.y };
@@ -271,18 +283,23 @@ void enemyMovement() {
 }
 
 void bulletShooting() {
+	Shoot_dir = { 0, 0 };
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
 		Shoot_dir = { Shoot_dir.x, -1 };
+		anim_dir = 4;
 	}
 	else if (IsKeyDown(KEY_DOWN)) {
 		Shoot_dir = { Shoot_dir.x, 1 };
+		anim_dir = 2;
 	}
 	if (IsKeyDown(KEY_RIGHT)) {
 		Shoot_dir = { 1, Shoot_dir.y };
+		anim_dir = 1;
 	}
 	else if (IsKeyDown(KEY_LEFT)) {
 		Shoot_dir = { -1, Shoot_dir.y };
+		anim_dir = 3;
 	}
 
 	//create bullets
@@ -308,7 +325,7 @@ void bulletShooting() {
 	else if (fire_frame_counter % fire_rate != 0) {
 		fire_frame_counter++;
 	}
-	Shoot_dir = { 0, 0 };
+	//Shoot_dir = { 0, 0 };
 }
 
 void bulletUpdate(int bullet_amount) {
@@ -384,6 +401,30 @@ void bullet_obsticleColl(int bullet_amount) {
 	}
 }
 
+//ANIMATION
+void animationManager() {
+	animation_frame_counter++;
+	//MAP
+
+	//bush animation
+	if (animation_frame_counter % 60 == 0) {//once per second
+		animation_frame_counter = 0;
+		bush_frame = !bush_frame;
+
+	}
+
+	//PLAYER
+	if (Mov_dir != 0){ //si el player s'està movent
+		player_walk_anim_counter++;
+		if (player_walk_anim_counter % 6 == 0) {
+			right_foot = !right_foot;
+		}
+	}
+	else {
+		player_walk_anim_counter = 0;
+	}
+}
+
 void UpdateGame() {//update variables and positions
 
 	//MUSIC
@@ -412,15 +453,7 @@ void UpdateGame() {//update variables and positions
 	bullet_obsticleColl(bullet_tracker.size());
 
 	//ANIMATIONS
-	animation_frame_counter++;
-	//MAP
-
-	//bush animation
-	if (animation_frame_counter % 60 == 0) {//once per second
-		animation_frame_counter = 0;
-		bush_frame = !bush_frame;
-
-	}
+	animationManager();
 }
 
 
@@ -432,13 +465,119 @@ void positionObsticle(float posX, float posY) {
 	}
 	//afegir codi de bullet pool
 }
+void DrawPlayer() {
+	if (anim_dir != 0) {//esta disparant
+		if (Mov_dir != 0) { //s'esta movent
+			switch (anim_dir) {
+			case 1: //dreta
+				if (right_foot) {
+					src = { 16 * 6, 0, 16, 16 };
+				}
+				else {
+					src = { 0, 16, 16, 16 };
+				}
+				break;
+			case 2: //avall
+				if (right_foot) {
+					src = { 16 * 4, 0, 16, 16 };
+				}
+				else {
+					src = { 16 * 3, 0, 16, 16 };
+				}
+				break;
+			case 3: //esquerra
+				if (right_foot) {
+					src = { 16 * 6, 16, 16, 16 };
+				}
+				else {
+					src = { 16 * 5, 16, 16, 16 };
+				}
+				break;
+			case 4: //amunt 
+				if (right_foot) {
+					src = { 16 * 2, 16, 16, 16 };
+				}
+				else {
+					src = { 16 * 3, 16, 16, 16 };
+				}
+				break;
+			case 0:
+				src = { 0, 0, 16, 16 };
+				break;
+			}
+			DrawTexturePro(player_character_spritesheet, src, { player_pos.x, player_pos.y, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
+		}
+		else {//no s'esta movent
+			switch (anim_dir) {
+			case 1: //dreta
+				src = { 16 * 5, 0, 16, 16 };
+				break;
+			case 2: //avall
+				src = {16 * 2, 0, 16, 16};
+				break;
+			case 3: //esquerra
+				src = { 16 * 4, 16, 16, 16 };
+				break;
+			case 4: //amunt 
+				src = { 16 , 16, 16, 16 };
+				break;
+			}
+			DrawTexturePro(player_character_spritesheet, src, { player_pos.x, player_pos.y, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
+
+		}
+	}
+	else {//no esta disparant
+		switch (Mov_dir) {//s'està movent
+		case 1: //dreta
+			if(right_foot){
+				src = { 16 * 6, 0, 16, 16 };
+			}
+			else {
+				src = { 0, 16, 16, 16 };
+			}
+			break;
+		case 2: //avall
+			if (right_foot) {
+				src = {16 * 4, 0, 16, 16};
+			}
+			else {
+				src = { 16 * 3, 0, 16, 16};
+			}
+			break;
+		case 3: //esquerra
+			if (right_foot) {
+				src = {16 * 6, 16, 16, 16};
+			}
+			else {
+				src = { 16 * 5, 16, 16, 16};
+			}
+			break;
+		case 4: //amunt 
+			if (right_foot) {
+				src = {16 * 2, 16, 16, 16};
+			}
+			else {
+				src = { 16 * 3, 16, 16, 16};
+			}
+			break;
+		case 0: //no es mou ni dispara
+			src = { 0, 0, 16, 16 };
+			break;
+		}
+		DrawTexturePro(player_character_spritesheet, src, { player_pos.x, player_pos.y, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
+	}
+	
+	Shoot_dir = { 0,0 };
+	anim_dir = 0;
+	Mov_dir = 0;
+}
 
 void DrawMap(){
 	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
 	//const char* text[NUMBER_OF_TILES];
 	int k = 0;
 	//string M{ LoadFileText("AREAS/area1_1.txt") };
-	Rectangle src;
+	//Rectangle src;
 	if (bush_frame == 0) {
 		src = { 0.0f, 0.0f, 16.0f, 16.0f }; //tile_size , tile_size
 	}
@@ -455,10 +594,7 @@ void DrawMap(){
 				DrawTextureEx(path, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
 				break;
 			case 'B':
-				
 				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size}, {0,0}, 0, WHITE);
-				
-				
 				break;
 			case 'O':
 				DrawTextureEx(logs, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
@@ -481,7 +617,7 @@ void DrawGame() {//draws the game every frame
 	DrawMap();
 
 	//draw player
-	DrawRectangleV(player_pos, player_size, BLACK);
+	DrawPlayer();
 
 	//draw obstacle
 	if (tri.alive) {
