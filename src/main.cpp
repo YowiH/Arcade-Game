@@ -7,9 +7,6 @@
 
 using namespace std;
 
-int fire_frame_counter = 0;
-int fire_rate = 15;
-
 //ANIMATIONS
 Rectangle src;
 int animation_frame_counter = 0;
@@ -21,23 +18,32 @@ bool bush_frame = 0;
 const float tile_size = 32;
 const float area_size = tile_size * 16;
 const int NUMBER_OF_TILES = 256;
+int randVal; //used to get random values;
 
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
 Vector2 player_pos{ tile_size * 8, tile_size * 3 };
 int player_Speed = 2;
-Vector2 Shoot_dir;
 int Mov_dir;
-int anim_dir;
 int player_walk_anim_counter = 0;
 bool right_foot;
 int damage = 1;
 bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
 
+//shooting
+int fire_frame_counter = 0;
+int fire_rate = 15;
+Vector2 Shoot_dir;
+int anim_dir; //variable to know what animation to play when shooting
 
 
 //MAPS AND AREAS
 Map active_map;
+
+//ENEMY SPAWNING VARIABLES
+int active_enemies, max_active_enemies = 10;
+int enemy_creation_delay = 30, frames_since_enemy_spawn = 0;
+
 
 //CLASS HIERARCHY
 class GameObject {
@@ -273,6 +279,76 @@ void PlayerMovement() {
 	yNegBlock = false;
 }
 
+void createEnemies() {
+	if (active_enemies < max_active_enemies && frames_since_enemy_spawn >= enemy_creation_delay) {
+		randVal = GetRandomValue(0, 11);
+		Vector2 pos = {0, 0};
+		frames_since_enemy_spawn = 0;
+		switch (randVal) {
+			//costat de dalt
+		case 0:
+			pos = { tile_size * 11, tile_size };
+			break;
+		case 1:
+			pos = { tile_size * 12, tile_size };
+			break;
+		case 2:
+			pos = { tile_size * 13, tile_size };
+			break;
+			//costat esquerra
+		case 3:
+			pos = { tile_size * 3, tile_size * 9 };
+			break;
+		case 4:
+			pos = { tile_size * 3, tile_size * 10 };
+			break;
+		case 5:
+			pos = { tile_size * 3, tile_size * 11 };
+			break;
+
+			//costat dret
+		case 6:
+			pos = { tile_size * 19, tile_size * 9 };
+			break;
+		case 7:
+			pos = { tile_size * 19, tile_size * 10 };
+			break;
+		case 8:
+			pos = { tile_size * 19, tile_size * 11 };
+			break;
+			//costat de baix
+		case 9:
+			pos = { tile_size * 11,  tile_size * 17 };
+			break;
+		case 10:
+			pos = { tile_size * 12, tile_size * 17 };
+			break;
+		case 11:
+			pos = { tile_size * 13, tile_size * 17 };
+			break;
+		defalult:
+			cout << "the random value has a wrong value" << endl;
+		}
+		if (enemy_pool.empty()) {
+			enemy baddie;
+			baddie.position = pos;
+			baddie.hp = 1;
+			enemy_tracker.push_back(baddie);
+		}
+		else {
+			enemy_tracker.push_back(enemy_pool.back());
+			enemy_tracker.back().hp = 1;
+			enemy_tracker.back().position = pos;
+			enemy_pool.pop_back();
+		}
+		active_enemies++;
+	
+	}
+	else {
+		frames_since_enemy_spawn++;
+	}
+}
+
 void enemyMovement() {
 	//delete this trial code
 	float magnitude;
@@ -280,11 +356,10 @@ void enemyMovement() {
 		magnitude = sqrt((player_pos.x - enemy_tracker[i].position.x) * (player_pos.x - enemy_tracker[i].position.x) + (player_pos.y - enemy_tracker[i].position.y) * (player_pos.y - enemy_tracker[i].position.y));
 		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
 	}
-	magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
-	
-	if (tri.alive) {
+	//magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
+	/*if (tri.alive) {
 		tri.position = { tri.position.x + ((player_pos.x - tri.position.x) / magnitude) * 2, tri.position.y + ((player_pos.y - tri.position.y) / magnitude) * 2 };
-	}
+	}*/
 }
 
 void bulletShooting() {
@@ -393,6 +468,33 @@ void player_obsticleColl() {
 	}
 }
 
+void bullet_enemyColl() {
+	//comprovar totes les bales per tots els enemics
+	for (int i = 0; i < enemy_tracker.size(); i++) {
+		for (int j = 0; j < bullet_tracker.size(); j++) {
+			if (CheckCollisionCircles(bullet_tracker[j].position, tile_size / 4, enemy_tracker[i].position, tile_size / 2)) {
+				//save the bullet in the pool
+				bullet_pool.push_back(bullet_tracker[j]);
+				//borrar bullet
+				auto& k = bullet_tracker.begin() + j;
+				bullet_tracker.erase(k);
+
+				//reduce hit enemy hitpoints
+				enemy_tracker[i].hp -= damage;
+				//kill enemy if hitpoints are 0 or lower
+				if (enemy_tracker[i].hp <= 0) {
+					//save the enemy in the pool
+					enemy_pool.push_back(enemy_tracker[i]);
+					//borrar enemy
+					auto& e = enemy_tracker.begin() + i;
+					enemy_tracker.erase(e);
+					active_enemies--;
+				}
+			}
+		}
+	}
+}
+
 void bullet_obsticleColl(int bullet_amount) {
 	for (int i = bullet_amount - 1; i >= 0; i--) {
 		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, tri.position, tile_size / 2) && tri.alive) {
@@ -439,6 +541,9 @@ void UpdateGame() {//update variables and positions
 	PlayerMovement();
 	//ENEMY MOVEMENT
 	enemyMovement();
+
+	//CREATE ENEMIES
+	createEnemies();
 	//SHOOTING BULLETS
 	bulletShooting();
 
@@ -453,7 +558,7 @@ void UpdateGame() {//update variables and positions
 	player_obsticleColl();
 	
 	//bullet-enemies
-	// 
+	bullet_enemyColl();
 	//bullets-obstacles
 	bullet_obsticleColl(bullet_tracker.size());
 
@@ -612,6 +717,19 @@ void DrawMap(){
 		}
 	}
 }
+void DrawEnemies() {
+	int enemy_amount = enemy_tracker.size();
+	for (int i = 0; i < enemy_amount; i++) {
+		//DrawTextureEx(enemy_text, enemy_tracker[i].position, 0, tile_size / 16, WHITE);
+		DrawRectangleV(enemy_tracker[i].position, {tile_size, tile_size}, RED);
+	}
+}
+void DrawBullets() {
+	int bullet_amount = bullet_tracker.size();
+	for (int i = 0; i < bullet_amount; i++) {
+		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size / 16, WHITE);
+	}
+}
 
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
@@ -624,17 +742,15 @@ void DrawGame() {//draws the game every frame
 	//draw player
 	DrawPlayer();
 
-	//draw obstacle
-	if (tri.alive) {
+	//draw enemies
+	DrawEnemies();
+
+	/*if (tri.alive) {
 		DrawRectangleV(tri.position, { tile_size, tile_size }, tri.color);
-	}
+	}*/
 
 	//draw bullets
-	int bullet_amount = bullet_tracker.size();
-	for (int i = 0; i < bullet_amount; i++) {
-		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size/16, WHITE);
-	}
-
+	DrawBullets();
 
 	EndDrawing();
 }
