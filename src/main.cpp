@@ -79,6 +79,7 @@ struct enemy {
 	Vector2 velocity;
 	Vector2 position;
 	int hp;
+	int anim_counter;
 };
 
 struct trial_obs {
@@ -432,9 +433,15 @@ void bulletUpdate(int bullet_amount) {
 
 //COLLISIONS
 void player_enemyColl() {
-	if (CheckCollisionCircles(player_pos, tile_size / 2, tri.position, tile_size / 2) && tri.alive) {
-		cout << "you are dead" << endl;
+	for (int i = 0; i < enemy_tracker.size(); i++) {
+		if (CheckCollisionCircles(player_pos, tile_size / 2, enemy_tracker[i].position, tile_size / 2)) {
+			cout << "you are dead" << endl;
+		}
 	}
+	/*if (CheckCollisionCircles(player_pos, tile_size / 2, tri.position, tile_size / 2) && tri.alive) {
+		cout << "you are dead" << endl;
+	}*/
+	
 }
 
 void restrainPlayerMovement(float obsPosX, float obsPosY) {
