@@ -79,7 +79,8 @@ struct enemy {
 	Vector2 velocity;
 	Vector2 position;
 	int hp;
-	int anim_counter;
+	int anim_counter = 0;
+	bool right_foot;
 };
 
 struct trial_obs {
@@ -201,7 +202,12 @@ void LoadAssets() {
 	bridge = LoadTexture("bridge.png");
 	bullet_player = LoadTexture("bullet.png");
 	logs = LoadTexture("logs.png");
+
+	//CHARACTERS
 	player_character_spritesheet = LoadTexture("player_character_spritesheet.png");
+
+	//ENEMIES
+	orc_spritesheet = LoadTexture("orc_spritesheet.png");
 
 	//SOUND
 	shoot_fx = LoadSound("shoot1.mp3");
@@ -216,7 +222,12 @@ void UnloadGame() {
 	UnloadTexture(bush_spritesheet);
 	UnloadTexture(path);
 	UnloadTexture(logs);
+
+	//characters
 	UnloadTexture(player_character_spritesheet);
+
+	//enemies
+	UnloadTexture(orc_spritesheet);
 
 	//sounds
 	UnloadSound(shoot_fx);
@@ -288,44 +299,44 @@ void createEnemies() {
 		switch (randVal) {
 			//costat de dalt
 		case 0:
-			pos = { tile_size * 11, tile_size };
+			pos = { tile_size * 10, tile_size };
 			break;
 		case 1:
-			pos = { tile_size * 12, tile_size };
+			pos = { tile_size * 11, tile_size };
 			break;
 		case 2:
-			pos = { tile_size * 13, tile_size };
+			pos = { tile_size * 12, tile_size };
 			break;
 			//costat esquerra
 		case 3:
-			pos = { tile_size * 3, tile_size * 9 };
+			pos = { tile_size * 3, tile_size * 8 };
 			break;
 		case 4:
-			pos = { tile_size * 3, tile_size * 10 };
+			pos = { tile_size * 3, tile_size * 9 };
 			break;
 		case 5:
-			pos = { tile_size * 3, tile_size * 11 };
+			pos = { tile_size * 3, tile_size * 10 };
 			break;
 
 			//costat dret
 		case 6:
-			pos = { tile_size * 19, tile_size * 9 };
+			pos = { tile_size * 19, tile_size * 8 };
 			break;
 		case 7:
-			pos = { tile_size * 19, tile_size * 10 };
+			pos = { tile_size * 19, tile_size * 9 };
 			break;
 		case 8:
-			pos = { tile_size * 19, tile_size * 11 };
+			pos = { tile_size * 19, tile_size * 10 };
 			break;
 			//costat de baix
 		case 9:
-			pos = { tile_size * 11,  tile_size * 17 };
+			pos = { tile_size * 11,  tile_size * 16 };
 			break;
 		case 10:
-			pos = { tile_size * 12, tile_size * 17 };
+			pos = { tile_size * 12, tile_size * 16 };
 			break;
 		case 11:
-			pos = { tile_size * 13, tile_size * 17 };
+			pos = { tile_size * 13, tile_size * 16 };
 			break;
 		defalult:
 			cout << "the random value has a wrong value" << endl;
@@ -537,6 +548,15 @@ void animationManager() {
 	else {
 		player_walk_anim_counter = 0;
 	}
+
+	//ENEMIES
+	for (int i = 0; i < enemy_tracker.size(); i++) {
+		enemy_tracker[i].anim_counter++;
+		if (enemy_tracker[i].anim_counter % 12 == 0) {
+			enemy_tracker[i].right_foot = !enemy_tracker[i].right_foot;
+			enemy_tracker[i].anim_counter = 0;
+		}
+	}
 }
 
 void UpdateGame() {//update variables and positions
@@ -727,8 +747,13 @@ void DrawMap(){
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
 	for (int i = 0; i < enemy_amount; i++) {
-		//DrawTextureEx(enemy_text, enemy_tracker[i].position, 0, tile_size / 16, WHITE);
-		DrawRectangleV(enemy_tracker[i].position, {tile_size, tile_size}, RED);
+		if (right_foot) {
+			src = { 0, 0, 16, 16 };
+		}
+		else {
+			src = { 16, 0, 16, 16 };
+		}
+		DrawTexturePro(orc_spritesheet, src, { enemy_tracker[i].position.x, enemy_tracker[i].position.y , tile_size, tile_size }, { 0,0 }, 0, WHITE);
 	}
 }
 void DrawBullets() {
