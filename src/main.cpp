@@ -1,18 +1,19 @@
 #include "raylib.h"
-#include "game.h"
 #include "resource_dir.h"
 
+#include "window.h"
+
 int main() {
-    SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
-    InitWindow(512, 512, "Journey of the Prairie King");
-    SearchAndSetResourceDir("resources");
-    Game::InitGame();
+    Window window;
+
+    window.create();
+    window.texturize();
 
     while (!WindowShouldClose()) {
-        Game::UpdateDrawFrame();
+        window.update();
+        window.draw();
     }
 
-    Game::UnloadGame();
-    CloseWindow();
+    window.unload();
     return 0;
 }
