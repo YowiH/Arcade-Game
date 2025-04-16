@@ -1,6 +1,3 @@
-#include "raylib.h"
-#include "resource_dir.h"
-
 #include "window.h"
 
 int main() {

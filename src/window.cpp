@@ -1,7 +1,5 @@
 #include "window.h"
 
-
-
 void Window::create() {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
     tile_size = 32;
@@ -11,6 +9,7 @@ void Window::create() {
     SetTargetFPS(60);
     fire_rate = 15;
     fire_rate_counter = 0;
+    
 }
 
 void Window::texturize() {
@@ -18,12 +17,15 @@ void Window::texturize() {
 }
 
 void Window::update() {
-
+    player.move();
 }
 
 void Window::draw() {
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
+
+    player.draw();
+    
     EndDrawing();
 }
 

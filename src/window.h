@@ -3,6 +3,8 @@
 #include "raylib.h"
 #include "resource_dir.h"
 
+#include "player.h"
+
 class Window {
 private:
 	int tile_size;
@@ -12,6 +14,8 @@ private:
 	int fire_rate_counter;
 
 	bool environment_frame;
+
+	Player player;
 
 	// desert terrain
 	Texture2D dirt_grass;
