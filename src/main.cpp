@@ -459,16 +459,16 @@ void bulletShooting() {
 	//Shoot_dir = { 0, 0 };
 }
 
-void bulletUpdate(int bullet_amount) {
+void bulletUpdate() {
 	//get the lenght of the bullet vector
 	//update bullet's position
-	for (int i = 0; i < bullet_amount; i++) {
+	for (int i = 0; i < bullet_tracker.size(); i++) {
 		bullet& b = bullet_tracker[i];
 		b.position = Vector2{ b.position.x + b.velocity.x * b.speed, b.position.y + b.velocity.y * b.speed };
 	}
 
 	//destroy bullets
-	for (int i = bullet_amount - 1; i >= 0; i--) {
+	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
 		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
 		if ((bullet_tracker[i].position.x <= tile_size * 3 || bullet_tracker[i].position.x >= area_size + (tile_size * 3) || bullet_tracker[i].position.y <= tile_size || bullet_tracker[i].position.y >= area_size + tile_size)) { //&& bullet_tracker[i] != NULL
 			//save the bullet in the pool
@@ -572,7 +572,7 @@ void bullet_enemyColl() { //bug here?
 					enemy_pool.push_back(enemy_tracker[i]);
 
 					//mirar si es crea un power up
-					spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
+					//spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
 
 					//borrar enemy
 					auto& e = enemy_tracker.begin() + i;
@@ -653,7 +653,7 @@ void UpdateGame() {//update variables and positions
 	bulletShooting();
 
 	//update bullets
-	bulletUpdate(bullet_tracker.size());
+	bulletUpdate();
 
 	//update power ups
 	powerUpUpdate(); //TO DO
@@ -873,7 +873,7 @@ void DrawGame() {//draws the game every frame
 	DrawEnemies();
 
 	//draw power ups
-	drawPowerUps();
+	//drawPowerUps();
 
 	/*if (tri.alive) {
 		DrawRectangleV(tri.position, { tile_size, tile_size }, tri.color);
