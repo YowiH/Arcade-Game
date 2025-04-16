@@ -23,6 +23,7 @@ int randVal; //used to get random values;
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
 Vector2 player_pos{ tile_size * 8, tile_size * 3 };
+Vector2 player_mov_dir{0, 0};
 int player_Speed = 2;
 int Mov_dir;
 int player_walk_anim_counter = 0;
@@ -192,11 +193,13 @@ Sound shoot_fx;
 //music
 Music main_theme;
 
+//DATA MANAGEMENT
 
 void LoadAssets() {
-	//TEXTURES
+	// MAP TEXTURES
 	dirt_grass = LoadTexture("dirt_grass.png");
 	dirt = LoadTexture("dirt.png");
+	dirt_stones = LoadTexture("dirt_stones.png");
 	bush_spritesheet = LoadTexture("bush_spritesheet.png");
 	path = LoadTexture("path.png");
 	bridge = LoadTexture("bridge.png");
@@ -215,6 +218,7 @@ void LoadAssets() {
 	main_theme = LoadMusicStream("JOTPK_song.wav");
 
 }
+
 void UnloadGame() {
 	//textures
 	UnloadTexture(dirt_grass);
@@ -237,6 +241,9 @@ void UnloadGame() {
 
 	CloseAudioDevice;
 }
+
+//INITAILIZE GAME
+
 void InitGame() {
 	SetTargetFPS(60);
 	active_map = Map("AREAS/area1_1.txt");
@@ -253,21 +260,33 @@ void InitGame() {
 void PlayerMovement() {
 	//Mov_dir = 0;
 	if (IsKeyDown('A') && !xNegBlock) {
-		player_pos = { player_pos.x - player_Speed, player_pos.y };
+		//player_pos = { player_pos.x - player_Speed, player_pos.y };
+		player_mov_dir.x = -1;
 		Mov_dir = 3;
 	}
 	else if (IsKeyDown('D') && !xPosBlock) {
-		player_pos = { player_pos.x + player_Speed, player_pos.y };
+		//player_pos = { player_pos.x + player_Speed, player_pos.y };
+		player_mov_dir.x = 1;
 		Mov_dir = 1;
 	}
 
 	if (IsKeyDown('S') && !yPosBlock) {
-		player_pos = { player_pos.x, player_pos.y + player_Speed };
+		//player_pos = { player_pos.x, player_pos.y + player_Speed };
+		player_mov_dir.y = 1;
 		Mov_dir = 2;
 	}
 	else if (IsKeyDown('W') && !yNegBlock) {
-		player_pos = { player_pos.x, player_pos.y - player_Speed };
+		//player_pos = { player_pos.x, player_pos.y - player_Speed };
+		player_mov_dir.y = -1;
 		Mov_dir = 4;
+	}
+
+	//in order to make diagonal movements as fast as horizontal and vertical movements we must reduce the velocity in both directions
+	if (player_mov_dir.y != 0 && player_mov_dir.x != 0) {
+		player_pos = { player_pos.x + player_mov_dir.x * player_Speed * 0.707f, player_pos.y + player_mov_dir.y * player_Speed * 0.707f};
+	}
+	else{
+		player_pos = {player_pos.x + player_mov_dir.x * player_Speed, player_pos.y + player_mov_dir.y * player_Speed};
 	}
 	
 	//x axis limits
@@ -284,6 +303,7 @@ void PlayerMovement() {
 	else if (player_pos.y < tile_size*2) {
 		player_pos = { player_pos.x, tile_size*2 };
 	}
+	player_mov_dir = { 0, 0 };
 	//restart block variables
 	xPosBlock = false;
 	xNegBlock = false;
@@ -373,6 +393,8 @@ void enemyMovement() {
 		tri.position = { tri.position.x + ((player_pos.x - tri.position.x) / magnitude) * 2, tri.position.y + ((player_pos.y - tri.position.y) / magnitude) * 2 };
 	}*/
 }
+
+//BULLETS MANAGER
 
 void bulletShooting() {
 	Shoot_dir = { 0, 0 };
@@ -486,10 +508,10 @@ void player_obsticleColl() {
 	}
 }
 
-void bullet_enemyColl() {
+void bullet_enemyColl() { //bug here?
 	//comprovar totes les bales per tots els enemics
 	for (int i = 0; i < enemy_tracker.size(); i++) {
-		for (int j = 0; j < bullet_tracker.size(); j++) {
+		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
 			if (CheckCollisionCircles(bullet_tracker[j].position, tile_size / 4, enemy_tracker[i].position, tile_size / 2)) {
 				//save the bullet in the pool
 				bullet_pool.push_back(bullet_tracker[j]);
@@ -507,21 +529,24 @@ void bullet_enemyColl() {
 					auto& e = enemy_tracker.begin() + i;
 					enemy_tracker.erase(e);
 					active_enemies--;
+					
 				}
 			}
 		}
 	}
 }
 
-void bullet_obsticleColl(int bullet_amount) {
-	for (int i = bullet_amount - 1; i >= 0; i--) {
-		if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, tri.position, tile_size / 2) && tri.alive) {
-			tri.alive = false;
-			//save the bullet in the pool
-			bullet_pool.push_back(bullet_tracker[i]);
-			//borrar bullet
-			auto& j = bullet_tracker.begin() + i;
-			bullet_tracker.erase(j);
+void bullet_obsticleColl() { //bug here?
+	for (int j = 0; j < obsticle_tracker.size(); j++) {
+		for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
+
+			if (CheckCollisionCircles(bullet_tracker[i].position, tile_size / 4, { obsticle_tracker[j].rec.x + tile_size/2, obsticle_tracker[j].rec.y + tile_size/2}, tile_size / 2)) {
+				//save the bullet in the pool
+				bullet_pool.push_back(bullet_tracker[i]);
+				//borrar bullet
+				auto& k = bullet_tracker.begin() + i;
+				bullet_tracker.erase(k);
+			}
 		}
 	}
 }
@@ -587,7 +612,7 @@ void UpdateGame() {//update variables and positions
 	//bullet-enemies
 	bullet_enemyColl();
 	//bullets-obstacles
-	bullet_obsticleColl(bullet_tracker.size());
+	bullet_obsticleColl();
 
 	//ANIMATIONS
 	animationManager();
@@ -726,6 +751,12 @@ void DrawMap(){
 			switch (active_map.getStr()[k]) {
 			case 'D':
 				DrawTextureEx(dirt, { tile_size * j + (tile_size * 3), tile_size * i + tile_size}, 0, tile_size / 16, WHITE);
+				break;
+			case 'M':
+				DrawTextureEx(dirt_grass, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+				break;
+			case 'S':
+				DrawTextureEx(dirt_stones, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
 				break;
 			case 'P':
 				DrawTextureEx(path, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
