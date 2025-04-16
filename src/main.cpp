@@ -27,7 +27,7 @@ Vector2 player_mov_dir{0, 0};
 int player_Speed = 2;
 int Mov_dir;
 int player_walk_anim_counter = 0;
-bool right_foot;
+bool player_right_foot;
 int damage = 1;
 bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
 
@@ -42,7 +42,7 @@ int anim_dir; //variable to know what animation to play when shooting
 Map active_map;
 
 //ENEMY SPAWNING VARIABLES
-int active_enemies, max_active_enemies = 10;
+int active_enemies, max_active_enemies = 1;
 int enemy_creation_delay = 30, frames_since_enemy_spawn = 0;
 
 
@@ -84,6 +84,12 @@ struct enemy {
 	bool right_foot;
 };
 
+struct powerUp {
+	Vector2 position;
+	char type;
+	int despawn_timer = 0;
+};
+
 struct trial_obs {
 	bool alive = true;
 	Vector2 position;
@@ -106,6 +112,11 @@ std::vector<enemy> enemy_pool{};
 //obstacle vector
 std::vector<Obsticle> obsticle_tracker{};
 std::vector<Obsticle> obsticle_pool{};
+
+//power up vector
+
+std::vector<powerUp> powerUp_tracker{};
+std::vector<powerUp> powerUp_pool{};
 
 //TEXTURES
 //Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
@@ -212,6 +223,9 @@ void LoadAssets() {
 	//ENEMIES
 	orc_spritesheet = LoadTexture("orc_spritesheet.png");
 
+	//POWER UPS
+	extra_life = LoadTexture("extra_life.png");
+
 	//SOUND
 	shoot_fx = LoadSound("shoot1.mp3");
 	//MUSIC
@@ -232,6 +246,9 @@ void UnloadGame() {
 
 	//enemies
 	UnloadTexture(orc_spritesheet);
+
+	//power ups
+	UnloadTexture(extra_life);
 
 	//sounds
 	UnloadSound(shoot_fx);
@@ -423,14 +440,14 @@ void bulletShooting() {
 		if (bullet_pool.empty()) {
 			struct bullet b;
 			b.damage = damage;
-			b.position = { player_pos.x + tile_size / 2, player_pos.y + tile_size / 2 };
+			b.position = { player_pos.x + tile_size / 4, player_pos.y + tile_size / 4 };
 			b.velocity = Shoot_dir;
 			bullet_tracker.push_back(b);
 		}
 		else {
 			bullet_tracker.push_back(bullet_pool.back());
 			bullet_tracker.back().damage = damage;
-			bullet_tracker.back().position = { player_pos.x + tile_size / 2 , player_pos.y + tile_size / 2 };
+			bullet_tracker.back().position = { player_pos.x + tile_size / 4 , player_pos.y + tile_size / 4 };
 			bullet_tracker.back().velocity = Shoot_dir;
 			bullet_pool.pop_back();
 		}
@@ -462,6 +479,11 @@ void bulletUpdate(int bullet_amount) {
 		}
 
 	}
+}
+
+//POWER UP
+void powerUpUpdate() {
+
 }
 
 //COLLISIONS
@@ -508,6 +530,29 @@ void player_obsticleColl() {
 	}
 }
 
+void spawnPowerUp(float x, float y) {
+	randVal = GetRandomValue(1, 5);
+	if (randVal == 1) {
+		
+		if (powerUp_pool.empty()) {
+			// agafa un del pool
+			//en crea un
+			powerUp p;
+			p.position = { x, y };
+			p.type = 'U';
+			powerUp_tracker.push_back(p);
+		}
+		else {
+			// agafa un del pool
+			powerUp_tracker.push_back(powerUp_pool.back());
+			powerUp_tracker.back().position = {x , y};
+			powerUp_tracker.back().type = 'U';
+			powerUp_pool.pop_back();
+		}
+		
+	}
+}
+
 void bullet_enemyColl() { //bug here?
 	//comprovar totes les bales per tots els enemics
 	for (int i = 0; i < enemy_tracker.size(); i++) {
@@ -525,6 +570,10 @@ void bullet_enemyColl() { //bug here?
 				if (enemy_tracker[i].hp <= 0) {
 					//save the enemy in the pool
 					enemy_pool.push_back(enemy_tracker[i]);
+
+					//mirar si es crea un power up
+					spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
+
 					//borrar enemy
 					auto& e = enemy_tracker.begin() + i;
 					enemy_tracker.erase(e);
@@ -551,6 +600,10 @@ void bullet_obsticleColl() { //bug here?
 	}
 }
 
+void player_powerUpColl() {
+
+}
+
 //ANIMATION
 void animationManager() {
 	animation_frame_counter++;
@@ -567,7 +620,7 @@ void animationManager() {
 	if (Mov_dir != 0){ //si el player s'està movent
 		player_walk_anim_counter++;
 		if (player_walk_anim_counter % 6 == 0) {
-			right_foot = !right_foot;
+			player_right_foot = !player_right_foot;
 		}
 	}
 	else {
@@ -602,6 +655,9 @@ void UpdateGame() {//update variables and positions
 	//update bullets
 	bulletUpdate(bullet_tracker.size());
 
+	//update power ups
+	powerUpUpdate(); //TO DO
+
 	//COLLISIONS
 	//player-enemies
 	player_enemyColl();
@@ -613,6 +669,9 @@ void UpdateGame() {//update variables and positions
 	bullet_enemyColl();
 	//bullets-obstacles
 	bullet_obsticleColl();
+
+	//player power-up colisions
+	player_powerUpColl();
 
 	//ANIMATIONS
 	animationManager();
@@ -632,7 +691,7 @@ void DrawPlayer() {
 		if (Mov_dir != 0) { //s'esta movent
 			switch (anim_dir) {
 			case 1: //dreta
-				if (right_foot) {
+				if (player_right_foot) {
 					src = { 16 * 6, 0, 16, 16 };
 				}
 				else {
@@ -640,7 +699,7 @@ void DrawPlayer() {
 				}
 				break;
 			case 2: //avall
-				if (right_foot) {
+				if (player_right_foot) {
 					src = { 16 * 4, 0, 16, 16 };
 				}
 				else {
@@ -648,7 +707,7 @@ void DrawPlayer() {
 				}
 				break;
 			case 3: //esquerra
-				if (right_foot) {
+				if (player_right_foot) {
 					src = { 16 * 6, 16, 16, 16 };
 				}
 				else {
@@ -656,7 +715,7 @@ void DrawPlayer() {
 				}
 				break;
 			case 4: //amunt 
-				if (right_foot) {
+				if (player_right_foot) {
 					src = { 16 * 2, 16, 16, 16 };
 				}
 				else {
@@ -691,7 +750,7 @@ void DrawPlayer() {
 	else {//no esta disparant
 		switch (Mov_dir) {//s'està movent
 		case 1: //dreta
-			if(right_foot){
+			if(player_right_foot){
 				src = { 16 * 6, 0, 16, 16 };
 			}
 			else {
@@ -699,7 +758,7 @@ void DrawPlayer() {
 			}
 			break;
 		case 2: //avall
-			if (right_foot) {
+			if (player_right_foot) {
 				src = {16 * 4, 0, 16, 16};
 			}
 			else {
@@ -707,7 +766,7 @@ void DrawPlayer() {
 			}
 			break;
 		case 3: //esquerra
-			if (right_foot) {
+			if (player_right_foot) {
 				src = {16 * 6, 16, 16, 16};
 			}
 			else {
@@ -715,7 +774,7 @@ void DrawPlayer() {
 			}
 			break;
 		case 4: //amunt 
-			if (right_foot) {
+			if (player_right_foot) {
 				src = {16 * 2, 16, 16, 16};
 			}
 			else {
@@ -778,7 +837,7 @@ void DrawMap(){
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
 	for (int i = 0; i < enemy_amount; i++) {
-		if (right_foot) {
+		if (enemy_tracker[i].right_foot) {
 			src = { 0, 0, 16, 16 };
 		}
 		else {
@@ -791,6 +850,11 @@ void DrawBullets() {
 	int bullet_amount = bullet_tracker.size();
 	for (int i = 0; i < bullet_amount; i++) {
 		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size / 16, WHITE);
+	}
+}
+void drawPowerUps() {
+	for (int i = 0; i < powerUp_tracker.size(); i++) {
+		DrawTextureEx(extra_life, { powerUp_tracker[i].position}, 0, tile_size / 16, WHITE);
 	}
 }
 
@@ -807,6 +871,9 @@ void DrawGame() {//draws the game every frame
 
 	//draw enemies
 	DrawEnemies();
+
+	//draw power ups
+	drawPowerUps();
 
 	/*if (tri.alive) {
 		DrawRectangleV(tri.position, { tile_size, tile_size }, tri.color);
