@@ -7,6 +7,9 @@
 
 using namespace std;
 
+//trial variables
+//int enemies_killed = 0;
+
 //ANIMATIONS
 Rectangle src;
 int animation_frame_counter = 0;
@@ -22,12 +25,14 @@ int randVal; //used to get random values;
 
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
-Vector2 player_pos{ tile_size * 8, tile_size * 3 };
+Vector2 player_pos{ tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
 Vector2 player_mov_dir{0, 0};
 int player_Speed = 2;
 int Mov_dir;
 int player_walk_anim_counter = 0;
 bool player_right_foot;
+int lives = 3;
+int coins = 0;
 int damage = 1;
 bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
 
@@ -40,6 +45,7 @@ int anim_dir; //variable to know what animation to play when shooting
 
 //MAPS AND AREAS
 Map active_map;
+int powerUp_lifespan;
 
 //ENEMY SPAWNING VARIABLES
 int active_enemies, max_active_enemies = 5;
@@ -224,6 +230,7 @@ void LoadAssets() {
 	orc_spritesheet = LoadTexture("orc_spritesheet.png");
 
 	//POWER UPS
+	coin = LoadTexture("coin.png");
 	extra_life = LoadTexture("extra_life.png");
 
 	//SOUND
@@ -248,6 +255,7 @@ void UnloadGame() {
 	UnloadTexture(orc_spritesheet);
 
 	//power ups
+	UnloadTexture(coin);
 	UnloadTexture(extra_life);
 
 	//sounds
@@ -483,20 +491,32 @@ void bulletUpdate() {
 
 //POWER UP
 void powerUpUpdate() {
-
+	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
+		powerUp_tracker[i].despawn_timer++;
+		if (powerUp_tracker[i].despawn_timer > 120) {
+			//guardar power up al pool
+			powerUp_pool.push_back(powerUp_tracker[i]);
+			//borrar powerUp
+			auto& k = powerUp_tracker.begin() + i;
+			powerUp_tracker.erase(k);
+		}
+	}
 }
 
 //COLLISIONS
 void player_enemyColl() {
-	for (int i = 0; i < enemy_tracker.size(); i++) {
+	bool already_damaged = false;
+	int i = 0;
+	while (!already_damaged && i < enemy_tracker.size()) {
 		if (CheckCollisionCircles(player_pos, tile_size / 2, enemy_tracker[i].position, tile_size / 2)) {
-			cout << "you are dead" << endl;
+			already_damaged = true;
+			lives--;
+			if (lives < 0) {
+				cout << "you are dead" << endl;
+			}
 		}
+		i++;
 	}
-	/*if (CheckCollisionCircles(player_pos, tile_size / 2, tri.position, tile_size / 2) && tri.alive) {
-		cout << "you are dead" << endl;
-	}*/
-	
 }
 
 void restrainPlayerMovement(float obsPosX, float obsPosY) {
@@ -533,20 +553,34 @@ void player_obsticleColl() {
 void spawnPowerUp(float x, float y) {
 	randVal = GetRandomValue(1, 5);
 	if (randVal == 1) {
+		char C;
+		randVal = GetRandomValue(0, 1);
+		switch (randVal) {
+		case 0: //extra life
+			C = 'U';
+			break;
+		case 1: //coin
+			C = 'O';
+			break;
+		default:
+			cout << "type of power up not recognised" << endl;
+			C = '.';
+			break;
+		}
 		
 		if (powerUp_pool.empty()) {
-			// agafa un del pool
 			//en crea un
 			powerUp p;
 			p.position = { x, y };
-			p.type = 'U';
+			p.type = C;
 			powerUp_tracker.push_back(p);
 		}
 		else {
 			// agafa un del pool
 			powerUp_tracker.push_back(powerUp_pool.back());
 			powerUp_tracker.back().position = {x , y};
-			powerUp_tracker.back().type = 'U';
+			powerUp_tracker.back().type = C;
+			powerUp_tracker.back().despawn_timer = 0;
 			powerUp_pool.pop_back();
 		}
 		
@@ -555,10 +589,10 @@ void spawnPowerUp(float x, float y) {
 
 void bullet_enemyColl() { //bug here?
 	//comprovar totes les bales per tots els enemics
-	for (int i = 0; i < enemy_tracker.size(); i++) {
+	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
 		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
-			if (!enemy_tracker.empty()) {
-				if (CheckCollisionCircles(bullet_tracker[j].position, tile_size / 4, enemy_tracker[i].position, tile_size / 2)) {
+			if (enemy_tracker.size() - 1 >= i && bullet_tracker.size() - 1 >= j) {
+				if (CheckCollisionCircles(bullet_tracker[j].position, tile_size / 4, enemy_tracker[i].position, tile_size / 2)) { //MASSIVE ERROR
 					//save the bullet in the pool
 					bullet_pool.push_back(bullet_tracker[j]);
 					//borrar bullet
@@ -569,11 +603,12 @@ void bullet_enemyColl() { //bug here?
 					enemy_tracker[i].hp -= damage;
 					//kill enemy if hitpoints are 0 or lower
 					if (enemy_tracker[i].hp <= 0) {
+
 						//save the enemy in the pool
 						enemy_pool.push_back(enemy_tracker[i]);
 
 						//mirar si es crea un power up
-						//spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
+						spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
 
 						//borrar enemy
 						auto& e = enemy_tracker.begin() + i;
@@ -604,7 +639,25 @@ void bullet_obsticleColl() { //bug here?
 }
 
 void player_powerUpColl() {
-
+	for (int i = powerUp_tracker.size() - 1; i >= 0; i--){
+		if (CheckCollisionCircles(player_pos, tile_size / 2, { powerUp_tracker[i].position.x + tile_size / 3, powerUp_tracker[i].position.y + tile_size / 3 }, tile_size / 3)) {
+			switch (powerUp_tracker[i].type) {
+			case 'U': //vida extra
+				lives++;
+				cout << lives << " lives" << endl;
+				break;
+			case 'O'://monedes
+				coins++;
+				cout << coins << " coins" << endl;
+				break;
+			}
+			//guardar power up al pool
+			powerUp_pool.push_back(powerUp_tracker[i]);
+			//borrar powerUp
+			auto& k = powerUp_tracker.begin() + i;
+			powerUp_tracker.erase(k);
+		}
+	}
 }
 
 //ANIMATION
@@ -659,7 +712,7 @@ void UpdateGame() {//update variables and positions
 	bulletUpdate();
 
 	//update power ups
-	powerUpUpdate(); //TO DO
+	powerUpUpdate();
 
 	//COLLISIONS
 	//player-enemies
@@ -857,7 +910,17 @@ void DrawBullets() {
 }
 void drawPowerUps() {
 	for (int i = 0; i < powerUp_tracker.size(); i++) {
-		DrawTextureEx(extra_life, { powerUp_tracker[i].position}, 0, tile_size / 16, WHITE);
+		switch (powerUp_tracker[i].type) {
+		case 'U':
+			DrawTextureEx(extra_life, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
+			break;
+		case 'O':
+			DrawTextureEx(coin, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
+			break;
+		default:
+			cout << "power up not recognized (drawing)" << endl;
+			break;
+		}
 	}
 }
 
@@ -876,7 +939,7 @@ void DrawGame() {//draws the game every frame
 	DrawEnemies();
 
 	//draw power ups
-	//drawPowerUps();
+	drawPowerUps();
 
 	/*if (tri.alive) {
 		DrawRectangleV(tri.position, { tile_size, tile_size }, tri.color);
