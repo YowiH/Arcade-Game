@@ -1,4 +1,5 @@
 #include "bullet.h"
+#include "raymath.h"
 
 Bullet::Bullet(Vector2 position_start, Vector2 direction_start) {
 	position = position_start;
@@ -8,8 +9,7 @@ Bullet::Bullet(Vector2 position_start, Vector2 direction_start) {
 }
 
 void Bullet::move(float delta_time) {
-	position.x += direction.x * speed * delta_time;
-	position.y += direction.y * speed * delta_time;
+	position = Vector2Add(position, Vector2Scale(direction, speed * delta_time));
 }
 
 void Bullet::draw() {
