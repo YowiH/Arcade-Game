@@ -57,6 +57,19 @@ Vector2 Player::get_shoot_direction() {
 		shoot_direction = { 1, 0 };
 	}
 
+	if (IsKeyDown(KEY_UP) && IsKeyDown(KEY_LEFT)) {
+		shoot_direction = { -1, -1 };
+	}
+	if (IsKeyDown(KEY_UP) && IsKeyDown(KEY_RIGHT)) {
+		shoot_direction = { 1, -1 };
+	}
+	if (IsKeyDown(KEY_DOWN) && IsKeyDown(KEY_LEFT)) {
+		shoot_direction = { -1, 1 };
+	}
+	if (IsKeyDown(KEY_DOWN) && IsKeyDown(KEY_RIGHT)) {
+		shoot_direction = { 1, 1 };
+	}
+
 	return shoot_direction;
 }
 
