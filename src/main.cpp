@@ -45,7 +45,7 @@ int anim_dir; //variable to know what animation to play when shooting
 
 //MAPS AND AREAS
 Map active_map;
-int powerUp_lifespan;
+int powerUp_lifespan = 600;
 
 //ENEMY SPAWNING VARIABLES
 int active_enemies, max_active_enemies = 5;
@@ -493,7 +493,7 @@ void bulletUpdate() {
 void powerUpUpdate() {
 	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
 		powerUp_tracker[i].despawn_timer++;
-		if (powerUp_tracker[i].despawn_timer > 120) {
+		if (powerUp_tracker[i].despawn_timer > powerUp_lifespan) {
 			//guardar power up al pool
 			powerUp_pool.push_back(powerUp_tracker[i]);
 			//borrar powerUp
