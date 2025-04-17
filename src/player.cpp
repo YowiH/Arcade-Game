@@ -1,11 +1,12 @@
 #include "player.h"
 #include "raymath.h"
 
-Player::Player() {
+Player::Player(float ts) {
+	tile_size = ts;
+
 	health = 3;
 	coins = 0;
 	
-	tile_size = 32.0f;
 	size = { tile_size, tile_size };
 	position = { 50.0f, 50.0f };
 	speed = 300;
@@ -35,6 +36,14 @@ void Player::move(int screen_width, int screen_height) {
 
 void Player::draw() {
 	DrawRectangleV(position, size, WHITE);
+}
+
+Vector2 Player::get_position() const {
+	return position;
+}
+
+float Player::get_tile_size() const {
+	return tile_size;
 }
 
 Vector2 Player::get_center() const {
@@ -74,4 +83,12 @@ bool Player::can_shoot() {
 
 void Player::reset_fire_cooldown() {
 	fire_cooldown = fire_rate;
+}
+
+void Player::take_damage() {
+	health--;
+}
+
+int Player::get_health() const {
+	return health;
 }

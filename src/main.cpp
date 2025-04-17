@@ -1,7 +1,7 @@
 #include "window.h"
 
 int main() {
-    Window window;
+    Window window(32.0f);
     window.load();
 
     while (!WindowShouldClose()) {

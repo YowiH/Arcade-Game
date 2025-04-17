@@ -7,20 +7,26 @@
 
 #include "player.h"
 #include "bullet.h"
+#include "enemy.h"
 
 class Window {
 private:
-	int width;
-	int height;
-	int tile_size;
+	float width;
+	float height;
+	float tile_size;
 
+	Player player;
+
+	std::vector<Bullet> bullets;
 	int fire_rate;
 	int fire_cooldown;
 
-	Player player;
-	std::vector<Bullet> bullets;
+	std::vector<Enemy> enemies;
+	float enemy_spawn_timer;
 
 public:
+	Window(float ts);
+
 	void load();
 	void update();
 	void draw();

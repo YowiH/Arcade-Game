@@ -16,6 +16,14 @@ void Bullet::draw() {
 	DrawCircleV(position, radius, RED);
 }
 
+Vector2 Bullet::get_position() const {
+	return position;
+}
+
+float Bullet::get_radius() const {
+	return radius;
+}
+
 bool Bullet::is_off_screen(int screen_width, int screen_height) {
 	return position.x < 0 || position.x > screen_width || position.y < 0 || position.y > screen_height;
 }
