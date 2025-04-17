@@ -7,9 +7,6 @@
 
 using namespace std;
 
-//trial variables
-//int enemies_killed = 0;
-
 //ANIMATIONS
 Rectangle src;
 int animation_frame_counter = 0;
@@ -46,6 +43,7 @@ int anim_dir; //variable to know what animation to play when shooting
 //MAPS AND AREAS
 Map active_map;
 int powerUp_lifespan = 600;
+bool obstacles_positioned = false;
 
 //ENEMY SPAWNING VARIABLES
 int active_enemies, max_active_enemies = 5;
@@ -288,22 +286,26 @@ void PlayerMovement() {
 		//player_pos = { player_pos.x - player_Speed, player_pos.y };
 		player_mov_dir.x = -1;
 		Mov_dir = 3;
+		
 	}
 	else if (IsKeyDown('D') && !xPosBlock) {
 		//player_pos = { player_pos.x + player_Speed, player_pos.y };
 		player_mov_dir.x = 1;
 		Mov_dir = 1;
+		
 	}
 
 	if (IsKeyDown('S') && !yPosBlock) {
 		//player_pos = { player_pos.x, player_pos.y + player_Speed };
 		player_mov_dir.y = 1;
 		Mov_dir = 2;
+		
 	}
 	else if (IsKeyDown('W') && !yNegBlock) {
 		//player_pos = { player_pos.x, player_pos.y - player_Speed };
 		player_mov_dir.y = -1;
 		Mov_dir = 4;
+		
 	}
 
 	//in order to make diagonal movements as fast as horizontal and vertical movements we must reduce the velocity in both directions
@@ -334,6 +336,7 @@ void PlayerMovement() {
 	xNegBlock = false;
 	yPosBlock = false;
 	yNegBlock = false;
+	
 }
 
 void createEnemies() {
@@ -519,24 +522,50 @@ void player_enemyColl() {
 	}
 }
 
-void restrainPlayerMovement(float obsPosX, float obsPosY) {
-	//bloquejar mov dreta
-	if (player_pos.x <= obsPosX) { //pitagoras bby
-		xPosBlock = true;
-	}
-	//bloquejar mov esquerra
-	else if (player_pos.x >= obsPosX) {
-		xNegBlock = true;
-	}
-	//bloquejar mov down
-	else if (player_pos.y <= obsPosY) {
-		yPosBlock = true;
-	}
-	//bloquejar mov up
-	else {
+float GetAngle(Vector2 v, Vector2 u) {
+	float c = (u.x * v.x + u.y * v.y); //prop al cosinus
+	float s = (u.x * v.y - u.y * v.x); //prop al sinus
+
+	return atan2(s, c) + PI;
+}
+
+
+void restrainPlayerMovement(float x, float y) {
+	//define two vectors and use them to conclude the direction of the colision
+	Vector2 v = { 0, 0 };
+	Vector2 u = { 0, 0 };
+
+	//inici vector
+	float x0 = player_pos.x;
+	float y0 = player_pos.y;
+
+	//v va des del centre del obstacle (cantonada esquerra de dalt) al centre del jugador
+	v = { x0 - x, y0 - y };
+	//u va des del centre del jugador al centre de l'obstacle
+	u = { tile_size / 2, 0 };
+	float theta = GetAngle(u, v);
+
+	if (theta >= PI / 4 && theta < 3 * PI / 4) {
+		//colisio per dalt
 		yNegBlock = true;
 	}
+	else if (theta >= 3 * PI / 4 && theta < 5 * PI / 4) {
+		//colisió per l'esquerra
+		xNegBlock = true;
+	}
+	else if (theta >= 5 * PI / 4 && theta < 7 * PI / 4) {
+		//colisio per baix
+		yPosBlock = true;
+	}
+	else if (theta >= 7 * PI / 4 || theta < PI / 4) {
+		//colisio per la dreta
+		xPosBlock = true;
+	}
+	else {
+		cout << "error when calculating the angle" << endl;
+	}
 
+	return;
 
 }
 
@@ -591,7 +620,7 @@ void bullet_enemyColl() { //bug here?
 	//comprovar totes les bales per tots els enemics
 	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
 		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
-			if (enemy_tracker.size() - 1 >= i && bullet_tracker.size() - 1 >= j) {
+			if (enemy_tracker.size() - 1 >= i && bullet_tracker.size() - 1 >= j && !enemy_tracker.empty() && !bullet_tracker.empty()) {
 				if (CheckCollisionCircles(bullet_tracker[j].position, tile_size / 4, enemy_tracker[i].position, tile_size / 2)) { //MASSIVE ERROR
 					//save the bullet in the pool
 					bullet_pool.push_back(bullet_tracker[j]);
@@ -881,7 +910,9 @@ void DrawMap(){
 				break;
 			case 'O':
 				DrawTextureEx(logs, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-				positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+				if (!obstacles_positioned) {
+					positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+				}
 				break;
 			default:
 				break;
@@ -889,6 +920,7 @@ void DrawMap(){
 			k++;
 		}
 	}
+	obstacles_positioned = true;
 }
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
