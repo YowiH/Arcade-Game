@@ -42,7 +42,7 @@ int anim_dir; //variable to know what animation to play when shooting
 Map active_map;
 
 //ENEMY SPAWNING VARIABLES
-int active_enemies, max_active_enemies = 1;
+int active_enemies, max_active_enemies = 5;
 int enemy_creation_delay = 30, frames_since_enemy_spawn = 0;
 
 
@@ -557,30 +557,33 @@ void bullet_enemyColl() { //bug here?
 	//comprovar totes les bales per tots els enemics
 	for (int i = 0; i < enemy_tracker.size(); i++) {
 		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
-			if (CheckCollisionCircles(bullet_tracker[j].position, tile_size / 4, enemy_tracker[i].position, tile_size / 2)) {
-				//save the bullet in the pool
-				bullet_pool.push_back(bullet_tracker[j]);
-				//borrar bullet
-				auto& k = bullet_tracker.begin() + j;
-				bullet_tracker.erase(k);
+			if (!enemy_tracker.empty()) {
+				if (CheckCollisionCircles(bullet_tracker[j].position, tile_size / 4, enemy_tracker[i].position, tile_size / 2)) {
+					//save the bullet in the pool
+					bullet_pool.push_back(bullet_tracker[j]);
+					//borrar bullet
+					auto& k = bullet_tracker.begin() + j;
+					bullet_tracker.erase(k);
 
-				//reduce hit enemy hitpoints
-				enemy_tracker[i].hp -= damage;
-				//kill enemy if hitpoints are 0 or lower
-				if (enemy_tracker[i].hp <= 0) {
-					//save the enemy in the pool
-					enemy_pool.push_back(enemy_tracker[i]);
+					//reduce hit enemy hitpoints
+					enemy_tracker[i].hp -= damage;
+					//kill enemy if hitpoints are 0 or lower
+					if (enemy_tracker[i].hp <= 0) {
+						//save the enemy in the pool
+						enemy_pool.push_back(enemy_tracker[i]);
 
-					//mirar si es crea un power up
-					//spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
+						//mirar si es crea un power up
+						//spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
 
-					//borrar enemy
-					auto& e = enemy_tracker.begin() + i;
-					enemy_tracker.erase(e);
-					active_enemies--;
-					
+						//borrar enemy
+						auto& e = enemy_tracker.begin() + i;
+						enemy_tracker.erase(e);
+						active_enemies--;
+
+					}
 				}
 			}
+			
 		}
 	}
 }
