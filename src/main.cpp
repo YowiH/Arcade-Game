@@ -2,9 +2,7 @@
 
 int main() {
     Window window;
-
-    window.create();
-    window.texturize();
+    window.load();
 
     while (!WindowShouldClose()) {
         window.update();
