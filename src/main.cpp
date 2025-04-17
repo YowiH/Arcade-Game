@@ -15,10 +15,13 @@ int animation_frame_counter = 0;
 bool bush_frame = 0;
 //Rectangle bush_rec = { 0.0f, 0.0f, ()};
 
+//CENTRAL VARAIBLES
 const float tile_size = 32;
 const float area_size = tile_size * 16;
 const int NUMBER_OF_TILES = 256;
 int randVal; //used to get random values;
+float level_length = 60 * 10; //all the frames in 2 minutes: 60 * 60 * 2
+float frames_since_level_start = 0;
 
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
@@ -105,6 +108,11 @@ struct Obsticle {
 };
 struct trial_obs tri;
 
+struct death_anim {
+	Vector2 position;
+	int frameCounter = 0;
+};
+
 //bullet vectors
 std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
@@ -121,6 +129,10 @@ std::vector<Obsticle> obsticle_pool{};
 
 std::vector<powerUp> powerUp_tracker{};
 std::vector<powerUp> powerUp_pool{};
+
+//death animations
+std::vector<death_anim> deathAnim_tracker{};
+std::vector<death_anim> deathAnim_pool{};
 
 //TEXTURES
 //Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
@@ -199,11 +211,13 @@ Texture2D coin_5;
 Texture2D extra_life;
 
 //UI
-//Texture2D clock;
+Texture2D timer;
+Texture2D power_up_slot;
 
 //SOUND & MUSIC
 //fx
 Sound shoot_fx;
+Sound enemy_death;
 
 //music
 Music main_theme;
@@ -227,12 +241,20 @@ void LoadAssets() {
 	//ENEMIES
 	orc_spritesheet = LoadTexture("orc_spritesheet.png");
 
+	//DAMAGE & DEATH ANIMATIONS
+	death_animation_enemy = LoadTexture("death_animation_enemy.png");
+
 	//POWER UPS
 	coin = LoadTexture("coin.png");
 	extra_life = LoadTexture("extra_life.png");
 
+	//UI
+	timer = LoadTexture("clock.png");
+	power_up_slot = LoadTexture("power_up_slot.png");
+
 	//SOUND
 	shoot_fx = LoadSound("shoot1.mp3");
+	enemy_death = LoadSound("enemy_death2.mp3");
 	//MUSIC
 	main_theme = LoadMusicStream("JOTPK_song.wav");
 
@@ -252,12 +274,16 @@ void UnloadGame() {
 	//enemies
 	UnloadTexture(orc_spritesheet);
 
+	//damage and death animations
+	UnloadTexture(death_animation_enemy);
+
 	//power ups
 	UnloadTexture(coin);
 	UnloadTexture(extra_life);
 
 	//sounds
 	UnloadSound(shoot_fx);
+	UnloadSound(enemy_death);
 
 	//music
 	UnloadMusicStream(main_theme);
@@ -616,6 +642,21 @@ void spawnPowerUp(float x, float y) {
 	}
 }
 
+void createDeathAnimation(Vector2 pos) {
+		PlaySound(enemy_death);
+		if (deathAnim_pool.empty()) {
+			death_anim d;
+			d.position = pos;
+			deathAnim_tracker.push_back(d);
+		}
+		else {
+			deathAnim_tracker.push_back(deathAnim_pool.back());
+			deathAnim_tracker.back().position = pos;
+			deathAnim_tracker.back().frameCounter = 0;
+			deathAnim_pool.pop_back();
+		}
+}
+
 void bullet_enemyColl() { //bug here?
 	//comprovar totes les bales per tots els enemics
 	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
@@ -638,6 +679,9 @@ void bullet_enemyColl() { //bug here?
 
 						//mirar si es crea un power up
 						spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
+
+						//crea un death animations object
+						createDeathAnimation(enemy_tracker[i].position);
 
 						//borrar enemy
 						auto& e = enemy_tracker.begin() + i;
@@ -673,11 +717,9 @@ void player_powerUpColl() {
 			switch (powerUp_tracker[i].type) {
 			case 'U': //vida extra
 				lives++;
-				cout << lives << " lives" << endl;
 				break;
 			case 'O'://monedes
 				coins++;
-				cout << coins << " coins" << endl;
 				break;
 			}
 			//guardar power up al pool
@@ -687,6 +729,23 @@ void player_powerUpColl() {
 			powerUp_tracker.erase(k);
 		}
 	}
+}
+
+void updateDeathAnimations() {
+	//eliminar els objectes que porten 10 segons en joc
+	for (int i = deathAnim_tracker.size() - 1; i >= 0; i--) {
+		//eliminar els objectes que porten 10 segons en joc
+		deathAnim_tracker[i].frameCounter++;
+
+		if (deathAnim_tracker[i].frameCounter >= 60 * 10) {
+			//save the death animation in the pool
+			deathAnim_pool.push_back(deathAnim_tracker[i]);
+			//borrar death animation
+			auto& j = deathAnim_tracker.begin() + i;
+			deathAnim_tracker.erase(j);
+		}
+	}
+
 }
 
 //ANIMATION
@@ -706,6 +765,8 @@ void animationManager() {
 		player_walk_anim_counter++;
 		if (player_walk_anim_counter % 6 == 0) {
 			player_right_foot = !player_right_foot;
+			//play walking sound
+
 		}
 	}
 	else {
@@ -725,7 +786,7 @@ void animationManager() {
 void UpdateGame() {//update variables and positions
 
 	//MUSIC
-	UpdateMusicStream(main_theme);
+	//UpdateMusicStream(main_theme);
 
 	//MOVEMENT
 	PlayerMovement();
@@ -733,7 +794,11 @@ void UpdateGame() {//update variables and positions
 	enemyMovement();
 
 	//CREATE ENEMIES
-	createEnemies();
+	if (frames_since_level_start < level_length) {
+		createEnemies();
+		//incrementar variable temps
+		frames_since_level_start++;
+	}
 	//SHOOTING BULLETS
 	bulletShooting();
 
@@ -752,11 +817,15 @@ void UpdateGame() {//update variables and positions
 	
 	//bullet-enemies
 	bullet_enemyColl();
+
 	//bullets-obstacles
 	bullet_obsticleColl();
 
 	//player power-up colisions
 	player_powerUpColl();
+
+	//update death animations
+	updateDeathAnimations();
 
 	//ANIMATIONS
 	animationManager();
@@ -771,6 +840,8 @@ void positionObsticle(float posX, float posY) {
 	}
 	//afegir codi de bullet pool
 }
+
+//DRAW
 void DrawPlayer() {
 	if (anim_dir != 0) {//esta disparant
 		if (Mov_dir != 0) { //s'esta movent
@@ -922,6 +993,27 @@ void DrawMap(){
 	}
 	obstacles_positioned = true;
 }
+void DrawUI() {
+	//draw clock
+	DrawTextureEx(timer, { tile_size * 3, 0 }, 0, tile_size / 16, WHITE);
+
+	//draw life 
+	DrawTextureEx(extra_life, { 0, tile_size * 3 }, 0, (tile_size / 16) * 1.25, WHITE);
+	//write actual lives
+	DrawText(TextFormat("X%i", lives), tile_size + tile_size / 2, tile_size * 3 + tile_size / 4, 10 * (tile_size / 16), WHITE);
+
+	//draw coins
+	DrawTextureEx(coin, { 0, tile_size * 4 }, 0, (tile_size / 16) * 1.25, WHITE);
+	//write actual coins
+	DrawText(TextFormat("X%i", coins), tile_size + tile_size/2, tile_size * 4 + tile_size / 4, 10 * (tile_size / 16), WHITE);
+	
+	//draw power up slot
+	DrawTextureEx(power_up_slot, { tile_size, tile_size}, 0, (tile_size / 16) * 1.25, WHITE);
+
+	//draw level bar
+	int leangth = area_size - (area_size * (frames_since_level_start / level_length));
+	DrawRectangle(tile_size * 4, tile_size * 0.45, leangth, tile_size * 0.4, GREEN);
+}
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
 	for (int i = 0; i < enemy_amount; i++) {
@@ -938,6 +1030,30 @@ void DrawBullets() {
 	int bullet_amount = bullet_tracker.size();
 	for (int i = 0; i < bullet_amount; i++) {
 		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size / 16, WHITE);
+	}
+}
+void DrawDeathAnimations() {
+	for (int i = 0; i < deathAnim_tracker.size(); i++) {
+		//actualitzar animacions
+		if (deathAnim_tracker[i].frameCounter < 8) {
+			src = { 0, 0, 16, 16 };
+		}
+		else if (deathAnim_tracker[i].frameCounter < 8 * 2) {
+			src = { 16 * 1, 0, 16, 16 };
+		}
+		else if (deathAnim_tracker[i].frameCounter < 8 * 3) {
+			src = { 16 * 2, 0, 16, 16 };
+		}
+		else if (deathAnim_tracker[i].frameCounter < 8 * 4) {
+			src = { 16 * 3, 0, 16, 16 };
+		}
+		else if (deathAnim_tracker[i].frameCounter < 8 * 5) {
+			src = { 16 * 4, 0, 16, 16 };
+		}
+		else {
+			src = { 16 * 5, 0, 16, 16 };
+		}
+		DrawTexturePro(death_animation_enemy, src, {deathAnim_tracker[i].position.x, deathAnim_tracker[i].position.y, tile_size, tile_size}, { 0,0 }, 0, WHITE);
 	}
 }
 void drawPowerUps() {
@@ -964,6 +1080,12 @@ void DrawGame() {//draws the game every frame
 	//draw map
 	DrawMap();
 
+	//draw enmie death animation
+	DrawDeathAnimations();
+
+	//draw UI
+	DrawUI();
+
 	//draw player
 	DrawPlayer();
 
@@ -973,15 +1095,13 @@ void DrawGame() {//draws the game every frame
 	//draw power ups
 	drawPowerUps();
 
-	/*if (tri.alive) {
-		DrawRectangleV(tri.position, { tile_size, tile_size }, tri.color);
-	}*/
-
 	//draw bullets
 	DrawBullets();
 
 	EndDrawing();
 }
+
+
 void UpdateDrawFrame() {
 	UpdateGame();
 	DrawGame();
