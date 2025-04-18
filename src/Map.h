@@ -8,7 +8,5 @@ private:
 public:
 	Map(const char* F);
 	std :: string getStr();
-
-
 	Map() = default;
 };

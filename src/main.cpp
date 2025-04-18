@@ -20,7 +20,7 @@ const float tile_size = 32;
 const float area_size = tile_size * 16;
 const int NUMBER_OF_TILES = 256;
 int randVal; //used to get random values;
-float level_length = 60 * 60; //all the frames in 2 minutes: 60 * 60 * 2
+float level_length = 60 * 10; //all the frames in 2 minutes: 60 * 60 * 2
 float frames_since_level_start = 0;
 
 //player varaibles
@@ -877,6 +877,14 @@ void UpdateGame() {//update variables and positions
 
 	//ANIMATIONS
 	animationManager();
+
+	if (IsKeyDown('N') && frames_since_level_start >= level_length) {
+		frames_since_level_start = 0;
+		//delete all obstacles
+		obsticle_tracker.clear();
+		obstacles_positioned = false;
+		active_map = Map("AREAS/area1_2.txt");
+	}
 }
 
 
