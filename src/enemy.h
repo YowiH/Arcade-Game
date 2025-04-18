@@ -5,10 +5,12 @@
 class Enemy {
 private:
 	Vector2 position;
+	float tile_size;
+	Vector2 size;
+	int tiles_per_second;
 	float speed;
-	float size;
 public:
-	Enemy(Vector2 pos, float spd);
+	Enemy(float ts, Vector2 pos);
 
 	void move(Vector2 player_position, float delta_time);
 	void draw();

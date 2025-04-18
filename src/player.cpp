@@ -9,7 +9,9 @@ Player::Player(float ts) {
 	
 	size = { tile_size, tile_size };
 	position = { 50.0f, 50.0f };
-	speed = 300;
+
+	tiles_per_second = 6.0f;
+	speed = tile_size * tiles_per_second;
 
 	shoot_direction = { 0, 0 };
 	fire_cooldown = 0.0f;

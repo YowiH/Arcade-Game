@@ -1,7 +1,8 @@
 #include "window.h"
 
 int main() {
-    Window window(32.0f);
+    float tile_size = 32.0f;
+    Window window(tile_size);
     window.load();
 
     while (!WindowShouldClose()) {

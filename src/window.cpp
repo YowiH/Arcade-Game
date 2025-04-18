@@ -1,8 +1,9 @@
 #include "window.h"
 
 Window::Window(float ts) : tile_size(ts), player(ts) {
-    width = tile_size * 16;
-    height = tile_size * 16;
+    tiles = 16;
+    width = tiles * tile_size;
+    height = tiles * tile_size;
 
     fire_rate = 0.2f;
     fire_cooldown = 0.0f;
@@ -23,7 +24,7 @@ void Window::update() {
 
     Vector2 direction = player.get_shoot_direction();
     if ((direction.x != 0 || direction.y != 0) && player.can_shoot()) {
-        bullets.push_back(Bullet(player.get_center(), direction));
+        bullets.push_back(Bullet(tile_size, player.get_center(), direction));
         player.reset_fire_cooldown();
     }
     for (int i = bullets.size() - 1; i >= 0; i--) {
@@ -35,8 +36,22 @@ void Window::update() {
 
     enemy_spawn_timer -= delta_time;
     if (enemy_spawn_timer <= 0.0f) {
-        Vector2 spawn_position{ GetRandomValue(0, width), GetRandomValue(0, height) };
-        enemies.push_back(Enemy(spawn_position, 100.0f));
+        int edge = GetRandomValue(0, 3);
+        Vector2 spawn_position;
+        switch (edge) {
+            case 0: // top
+                spawn_position = { static_cast<float>(GetRandomValue(0, static_cast<int>(width))), 0 };
+                break;
+            case 1: // bottom
+                spawn_position = { static_cast<float>(GetRandomValue(0, static_cast<int>(width))), height - tile_size };
+                break;
+            case 2: // left
+                spawn_position = { 0, static_cast<float>(GetRandomValue(0, static_cast<int>(height))) };
+                break;
+            case 3: // right
+                spawn_position = { width - tile_size, static_cast<float>(GetRandomValue(0, static_cast<int>(height))) };
+            }
+        enemies.push_back(Enemy(tile_size, spawn_position));
         enemy_spawn_timer = 2.0f;
     }
     for (int i = enemies.size() - 1; i >= 0; i--) {

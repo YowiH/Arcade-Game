@@ -8,8 +8,11 @@ private:
 	Vector2 direction;
 	float speed;
 	float radius;
+	float tile_size;
+	float tiles_per_second;
 public:
-	Bullet(Vector2 position_start, Vector2 direction_start);
+	Bullet(float ts, Vector2 position_start, Vector2 direction_start);
+
 	void move(float delta_time);
 	void draw();
 	Vector2 get_position() const;

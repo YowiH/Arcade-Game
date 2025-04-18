@@ -1,11 +1,15 @@
 #include "bullet.h"
 #include "raymath.h"
 
-Bullet::Bullet(Vector2 position_start, Vector2 direction_start) {
+Bullet::Bullet(float ts, Vector2 position_start, Vector2 direction_start) {
+	tile_size = ts;
 	position = position_start;
 	direction = direction_start;
-	speed = 400.0f;
-	radius = 5.0f;
+
+	tiles_per_second = 12.0f;
+	speed = tile_size * tiles_per_second;
+	
+	radius = tile_size / 8.0f;
 }
 
 void Bullet::move(float delta_time) {

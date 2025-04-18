@@ -8,12 +8,13 @@
 class Player {
 private:
 	int health;
-	int speed;
 	int coins;
 	
 	float tile_size;
 	Vector2 size;
 	Vector2 position;
+	int speed;
+	int tiles_per_second;
 
 	Vector2 shoot_direction;
 	float fire_cooldown;

@@ -11,9 +11,10 @@
 
 class Window {
 private:
+	int tiles;
+	float tile_size;
 	float width;
 	float height;
-	float tile_size;
 
 	Player player;
 
