@@ -241,6 +241,7 @@ void LoadAssets() {
 
 	//CHARACTERS
 	player_character_spritesheet = LoadTexture("player_character_spritesheet.png");
+	player_character_death = LoadTexture("player_character_death_anim.png");
 
 	//ENEMIES
 	orc_spritesheet = LoadTexture("orc_spritesheet.png");
@@ -550,6 +551,7 @@ void playerDeath() {
 		enemy_tracker.erase(j);
 
 	}
+	active_enemies = 0;
 	//borrar totes les bales
 	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
 		//save the bullet in the pool
@@ -831,7 +833,7 @@ void animationManager() {
 void UpdateGame() {//update variables and positions
 
 	//MUSIC
-	//UpdateMusicStream(main_theme);
+	UpdateMusicStream(main_theme);
 	if (!player_dying) {
 		//MOVEMENT
 		PlayerMovement();
@@ -1009,15 +1011,18 @@ void DrawPlayerDeath() {
 	else if (player_walk_anim_counter < 10 * 4) {
 		src = { 16 * 3, 0, 16, 16 };
 	}
-	else if (player_walk_anim_counter < 10 * 10) {
-		//waits
-	}
+	else if (player_walk_anim_counter <= 10 * 10) {}
 	else {
 		player_dying = false;
 		player_pos = { tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4) };
 		player_walk_anim_counter = 0;
 	}
-	DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
+	//dibuixa si han passat menys de 40 frames 
+	if (player_walk_anim_counter < 10 * 4) {
+		//waits
+		DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
+	}
+	//DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
 }
 void DrawMap(){
 	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
