@@ -20,7 +20,7 @@ const float tile_size = 32;
 const float area_size = tile_size * 16;
 const int NUMBER_OF_TILES = 256;
 int randVal; //used to get random values;
-float level_length = 60 * 10; //all the frames in 2 minutes: 60 * 60 * 2
+float level_length = 60 * 60; //all the frames in 2 minutes: 60 * 60 * 2
 float frames_since_level_start = 0;
 
 //player varaibles
@@ -31,6 +31,7 @@ int player_Speed = 2;
 int Mov_dir;
 int player_walk_anim_counter = 0;
 bool player_right_foot;
+bool player_dying;
 int lives = 3;
 int coins = 0;
 int damage = 1;
@@ -218,6 +219,9 @@ Texture2D power_up_slot;
 //fx
 Sound shoot_fx;
 Sound enemy_death;
+Sound power_up_pick_up;
+Sound coin_sound;
+Sound player_death;
 
 //music
 Music main_theme;
@@ -255,6 +259,10 @@ void LoadAssets() {
 	//SOUND
 	shoot_fx = LoadSound("shoot1.mp3");
 	enemy_death = LoadSound("enemy_death2.mp3");
+	power_up_pick_up = LoadSound("power_up_pick_up.mp3");
+	coin_sound = LoadSound("coin.mp3");
+	player_death = LoadSound("death_player.mp3");
+
 	//MUSIC
 	main_theme = LoadMusicStream("JOTPK_song.wav");
 
@@ -284,6 +292,7 @@ void UnloadGame() {
 	//sounds
 	UnloadSound(shoot_fx);
 	UnloadSound(enemy_death);
+	UnloadSound(coin_sound);
 
 	//music
 	UnloadMusicStream(main_theme);
@@ -296,10 +305,6 @@ void UnloadGame() {
 void InitGame() {
 	SetTargetFPS(60);
 	active_map = Map("AREAS/area1_1.txt");
-
-	//delete next two lines when done with trials
-	tri.color = RED;
-	tri.position = Vector2{ tile_size * 8, tile_size * 8 };
 	InitAudioDevice();
 	LoadAssets();
 	//start playing music
@@ -532,6 +537,40 @@ void powerUpUpdate() {
 	}
 }
 
+void playerDeath() {
+	player_dying = true;
+	player_walk_anim_counter = 0;
+	PlaySound(player_death);
+	//borrar enemics
+	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
+		//save the bullet in the pool
+		enemy_pool.push_back(enemy_tracker[i]);
+		//borrar bullet
+		auto& j = enemy_tracker.begin() + i;
+		enemy_tracker.erase(j);
+
+	}
+	//borrar totes les bales
+	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
+		//save the bullet in the pool
+		bullet_pool.push_back(bullet_tracker[i]);
+		//borrar bullet
+		auto& j = bullet_tracker.begin() + i;
+		bullet_tracker.erase(j);
+
+	}
+	//borrar tots els power ups
+	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
+		//save the bullet in the pool
+		powerUp_pool.push_back(powerUp_tracker[i]);
+		//borrar bullet
+		auto& j = powerUp_tracker.begin() + i;
+		powerUp_tracker.erase(j);
+
+	}
+}
+
+
 //COLLISIONS
 void player_enemyColl() {
 	bool already_damaged = false;
@@ -540,6 +579,10 @@ void player_enemyColl() {
 		if (CheckCollisionCircles(player_pos, tile_size / 2, enemy_tracker[i].position, tile_size / 2)) {
 			already_damaged = true;
 			lives--;
+
+			//player death
+			playerDeath();
+
 			if (lives < 0) {
 				cout << "you are dead" << endl;
 			}
@@ -717,9 +760,11 @@ void player_powerUpColl() {
 			switch (powerUp_tracker[i].type) {
 			case 'U': //vida extra
 				lives++;
+				PlaySound(power_up_pick_up);
 				break;
 			case 'O'://monedes
 				coins++;
+				PlaySound(coin_sound);
 				break;
 			}
 			//guardar power up al pool
@@ -787,42 +832,43 @@ void UpdateGame() {//update variables and positions
 
 	//MUSIC
 	//UpdateMusicStream(main_theme);
+	if (!player_dying) {
+		//MOVEMENT
+		PlayerMovement();
+		//ENEMY MOVEMENT
+		enemyMovement();
 
-	//MOVEMENT
-	PlayerMovement();
-	//ENEMY MOVEMENT
-	enemyMovement();
+		//CREATE ENEMIES
+		if (frames_since_level_start < level_length) {
+			createEnemies();
+			//incrementar variable temps
+			frames_since_level_start++;
+		}
+		//SHOOTING BULLETS
+		bulletShooting();
 
-	//CREATE ENEMIES
-	if (frames_since_level_start < level_length) {
-		createEnemies();
-		//incrementar variable temps
-		frames_since_level_start++;
+		//update bullets
+		bulletUpdate();
+
+		//update power ups
+		powerUpUpdate();
+
+		//COLLISIONS
+		//player-enemies
+		player_enemyColl();
+
+		//player-obstacles
+		player_obsticleColl();
+
+		//bullet-enemies
+		bullet_enemyColl();
+
+		//bullets-obstacles
+		bullet_obsticleColl();
+
+		//player power-up colisions
+		player_powerUpColl();
 	}
-	//SHOOTING BULLETS
-	bulletShooting();
-
-	//update bullets
-	bulletUpdate();
-
-	//update power ups
-	powerUpUpdate();
-
-	//COLLISIONS
-	//player-enemies
-	player_enemyColl();
-
-	//player-obstacles
-	player_obsticleColl();
-	
-	//bullet-enemies
-	bullet_enemyColl();
-
-	//bullets-obstacles
-	bullet_obsticleColl();
-
-	//player power-up colisions
-	player_powerUpColl();
 
 	//update death animations
 	updateDeathAnimations();
@@ -948,7 +994,31 @@ void DrawPlayer() {
 	anim_dir = 0;
 	Mov_dir = 0;
 }
-
+void DrawPlayerDeath() {
+	//player_walk_anim_counter++;
+	//actualitzar animacions
+	if (player_walk_anim_counter < 10) {
+		src = { 0, 0, 16, 16 };
+	}
+	else if (player_walk_anim_counter < 10 * 2) {
+		src = { 16 * 1, 0, 16, 16 };
+	}
+	else if (player_walk_anim_counter < 10 * 3) {
+		src = { 16 * 2, 0, 16, 16 };
+	}
+	else if (player_walk_anim_counter < 10 * 4) {
+		src = { 16 * 3, 0, 16, 16 };
+	}
+	else if (player_walk_anim_counter < 10 * 10) {
+		//waits
+	}
+	else {
+		player_dying = false;
+		player_pos = { tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4) };
+		player_walk_anim_counter = 0;
+	}
+	DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
+}
 void DrawMap(){
 	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
 	//const char* text[NUMBER_OF_TILES];
@@ -1087,7 +1157,12 @@ void DrawGame() {//draws the game every frame
 	DrawUI();
 
 	//draw player
-	DrawPlayer();
+	if (!player_dying) {
+		DrawPlayer();
+	}
+	else {
+		DrawPlayerDeath();
+	}
 
 	//draw enemies
 	DrawEnemies();
