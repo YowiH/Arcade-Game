@@ -25,6 +25,8 @@ private:
 	std::vector<Enemy> enemies;
 	float enemy_spawn_timer;
 
+	Texture2D dirt;
+
 public:
 	Window(float ts);
 

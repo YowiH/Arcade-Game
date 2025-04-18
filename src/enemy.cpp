@@ -15,7 +15,7 @@ void Enemy::move(Vector2 player_position, float delta_time) {
 }
 
 void Enemy::draw() {
-	DrawRectangleV(position, size, BLUE);
+	DrawRectangleV(position, size, BLACK);
 }
 
 bool Enemy::is_off_screen(int screen_width, int screen_height) const {

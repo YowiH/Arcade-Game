@@ -1,4 +1,5 @@
 #include "window.h"
+#include "resource_dir.h"
 
 Window::Window(float ts) : tile_size(ts), player(ts) {
     tiles = 16;
@@ -15,6 +16,9 @@ void Window::load() {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
     InitWindow(width, height, "Journey of the Prairie King");
     SetTargetFPS(60);
+
+    SearchAndSetResourceDir("../resources");
+    dirt = LoadTexture("sprites/dirt.png");
 }
 
 void Window::update() {
@@ -40,16 +44,16 @@ void Window::update() {
         Vector2 spawn_position;
         switch (edge) {
             case 0: // top
-                spawn_position = { static_cast<float>(GetRandomValue(0, static_cast<int>(width))), 0 };
+                spawn_position = { GetRandomValue(8, 10) * tile_size, 0};
                 break;
             case 1: // bottom
-                spawn_position = { static_cast<float>(GetRandomValue(0, static_cast<int>(width))), height - tile_size };
+                spawn_position = { GetRandomValue(8, 10) * tile_size, height - tile_size};
                 break;
             case 2: // left
-                spawn_position = { 0, static_cast<float>(GetRandomValue(0, static_cast<int>(height))) };
+                spawn_position = { 0, GetRandomValue(8, 10) * tile_size};
                 break;
             case 3: // right
-                spawn_position = { width - tile_size, static_cast<float>(GetRandomValue(0, static_cast<int>(height))) };
+                spawn_position = { width - tile_size, GetRandomValue(8, 10) * tile_size};
             }
         enemies.push_back(Enemy(tile_size, spawn_position));
         enemy_spawn_timer = 2.0f;
@@ -83,6 +87,12 @@ void Window::draw() {
     BeginDrawing();
     ClearBackground(BLACK);
 
+    for (int y = 0; y < 16; y++) {
+        for (int x = 0; x < 16; x++) {
+            DrawTextureEx(dirt, { x * tile_size, y * tile_size }, 0.0f, tile_size / 16.0f, WHITE);
+        }
+    }
+
     player.draw();
 
     for (Bullet& bullet : bullets) {
@@ -99,5 +109,7 @@ void Window::draw() {
 }
 
 void Window::unload() {
+    UnloadTexture(dirt);
+
     CloseWindow();
 }
