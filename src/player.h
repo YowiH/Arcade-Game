@@ -31,6 +31,7 @@ public:
 	void move(int screen_width, int screen_height);
 	void draw();
 
+	void set_position(Vector2 new_position);
 	Vector2 get_position() const;
 	float get_tile_size() const;
 	Vector2 get_center() const;
@@ -42,6 +43,7 @@ public:
 	bool take_damage(int amount);
 	void reset_invincibility();
 	void update_invincibility(float delta_time);
+	void reset_health();
 	int get_health() const;
 
 	~Player();

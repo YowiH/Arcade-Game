@@ -4,7 +4,7 @@
 Player::Player(float ts) {
 	tile_size = ts;
 
-	health = 100;
+	health = 3;
 	invincible = false;
 	invincibility_timer = 0.0f;
 	invincibility_duration = 3.0f;
@@ -45,6 +45,11 @@ void Player::draw() {
 	if (visible) {
 		DrawRectangleV(position, size, WHITE);
 	}
+}
+
+void Player::set_position(Vector2 new_position) {
+	position = new_position;
+
 }
 
 Vector2 Player::get_position() const {
@@ -117,6 +122,10 @@ void Player::update_invincibility(float delta_time) {
 		}
 		visible = (static_cast<int>(invincibility_timer * 10) % 2) == 0;
 	}
+}
+
+void Player::reset_health() {
+	health = 3;
 }
 
 int Player::get_health() const {

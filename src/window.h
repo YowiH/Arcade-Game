@@ -18,6 +18,8 @@ private:
 	float width;
 	float height;
 
+	bool is_game_over;
+
 	Player player;
 
 	std::vector<Bullet> bullets;

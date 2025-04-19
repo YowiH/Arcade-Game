@@ -6,6 +6,8 @@ Window::Window(float ts) : tile_size(ts), player(ts) {
     width = tiles * tile_size;
     height = tiles * tile_size;
 
+    is_game_over = false;
+
     fire_rate = 0.2f;
     fire_cooldown = 0.0f;
 
@@ -43,8 +45,33 @@ void Window::load() {
     path = LoadTexture("sprites/path.png");
 }
 
+void Window::unload() {
+    CloseAudioDevice();
+
+    UnloadSound(hurt);
+
+    map_data.clear();
+
+    UnloadTexture(dirt);
+    UnloadTexture(path);
+
+    CloseWindow();
+}
+
 void Window::update() {
     float delta_time = GetFrameTime();
+
+    if (is_game_over) {
+        if (IsKeyPressed(KEY_ENTER)) {
+            player.reset_health();
+            bullets.clear();
+            enemies.clear();
+            enemy_spawn_timer = 0.0f;
+            player.set_position({ width / 2, height / 2 });
+            is_game_over = false;
+        }
+        return;
+    }
 
     player.move(width, height);
     player.update_invincibility(delta_time);
@@ -100,17 +127,28 @@ void Window::update() {
         Rectangle player_rectangle = { player.get_position().x, player.get_position().y, player.get_tile_size(), player.get_tile_size() };
         Rectangle enemy_rectangle = { enemy.get_position().x, enemy.get_position().y, enemy.get_size(), enemy.get_size() };
         if (CheckCollisionRecs(player_rectangle, enemy_rectangle)) {
-            if (player.take_damage(20)) {
+            if (player.take_damage(1)) {
                 PlaySound(hurt);
             }
             break;
         }
+    }
+
+    if (player.get_health() <= 0) {
+        is_game_over = true;
     }
 }
 
 void Window::draw() {
     BeginDrawing();
     ClearBackground(BLACK);
+
+    if (is_game_over) {
+        DrawText("GAME OVER", width / 2 - 120, height / 2 - 40, 40, RED);
+        DrawText("Press ENTER to restart", width / 2 - 120, height / 2 + 10, 20, LIGHTGRAY);
+        EndDrawing();
+        return;
+    }
 
     for (int y = 0; y < map_data.size(); y++) {
         for (int x = 0; x < map_data[y].size(); x++) {
@@ -139,17 +177,4 @@ void Window::draw() {
     DrawText(TextFormat("Health %d", player.get_health()), 10, 10, 20, RED);
     
     EndDrawing();
-}
-
-void Window::unload() {
-    CloseAudioDevice();
-
-    UnloadSound(hurt);
-
-    map_data.clear();
-
-    UnloadTexture(dirt);
-    UnloadTexture(path);
-
-    CloseWindow();
 }
