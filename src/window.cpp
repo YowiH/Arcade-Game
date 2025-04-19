@@ -25,6 +25,7 @@ void Window::update() {
     float delta_time = GetFrameTime();
 
     player.move(width, height);
+    player.update_invincibility(delta_time);
 
     Vector2 direction = player.get_shoot_direction();
     if ((direction.x != 0 || direction.y != 0) && player.can_shoot()) {
@@ -77,7 +78,7 @@ void Window::update() {
         Rectangle player_rectangle = { player.get_position().x, player.get_position().y, player.get_tile_size(), player.get_tile_size() };
         Rectangle enemy_rectangle = { enemy.get_position().x, enemy.get_position().y, enemy.get_size(), enemy.get_size() };
         if (CheckCollisionRecs(player_rectangle, enemy_rectangle)) {
-            player.take_damage();
+            player.take_damage(20);
             break;
         }
     }

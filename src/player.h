@@ -8,6 +8,11 @@
 class Player {
 private:
 	int health;
+	bool invincible;
+	float invincibility_timer;
+	float invincibility_duration;
+	bool visible;
+
 	int coins;
 	
 	float tile_size;
@@ -19,6 +24,7 @@ private:
 	Vector2 shoot_direction;
 	float fire_cooldown;
 	float fire_rate;
+
 public:
 	Player(float ts);
 
@@ -33,6 +39,8 @@ public:
 	bool can_shoot();
 	void reset_fire_cooldown();
 
-	void take_damage();
+	void take_damage(int amount);
+	void reset_invincibility();
+	void update_invincibility(float delta_time);
 	int get_health() const;
 };
