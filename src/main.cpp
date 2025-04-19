@@ -46,6 +46,7 @@ int anim_dir; //variable to know what animation to play when shooting
 
 //MAPS AND AREAS
 Map active_map;
+int level_count = 0;
 int powerUp_lifespan = 600;
 bool obstacles_positioned = false;
 
@@ -135,7 +136,7 @@ std::vector<powerUp> powerUp_pool{};
 std::vector<death_anim> deathAnim_tracker{};
 std::vector<death_anim> deathAnim_pool{};
 
-std::vector<Map> map_list{ Map("AREAS/area1_1.txt"), Map("AREAS/area1_2.txt"), };
+std::vector<Map> map_list{};
 
 //TEXTURES
 //Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
@@ -307,7 +308,8 @@ void UnloadGame() {
 
 void InitGame() {
 	SetTargetFPS(60);
-	active_map = Map("AREAS/area1_1.txt");
+	map_list = { Map("AREAS/area1_1.txt"), Map("AREAS/area1_2.txt"), Map("AREAS/area1_3.txt") };
+	active_map = map_list[level_count];
 	InitAudioDevice();
 	LoadAssets();
 	//start playing music
@@ -885,7 +887,8 @@ void UpdateGame() {//update variables and positions
 		//delete all obstacles
 		obsticle_tracker.clear();
 		obstacles_positioned = false;
-		active_map = Map("AREAS/area1_2.txt");
+		level_count++;
+		active_map = map_list[level_count];
 	}
 }
 
