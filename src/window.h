@@ -24,6 +24,9 @@ private:
 
 	std::vector<Enemy> enemies;
 	float enemy_spawn_timer;
+	float enemy_spawn_rate;
+
+	Sound hurt;
 
 	Texture2D dirt;
 

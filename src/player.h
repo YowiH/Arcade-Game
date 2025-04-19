@@ -39,8 +39,10 @@ public:
 	bool can_shoot();
 	void reset_fire_cooldown();
 
-	void take_damage(int amount);
+	bool take_damage(int amount);
 	void reset_invincibility();
 	void update_invincibility(float delta_time);
 	int get_health() const;
+
+	~Player();
 };

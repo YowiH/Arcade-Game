@@ -7,7 +7,7 @@ Player::Player(float ts) {
 	health = 100;
 	invincible = false;
 	invincibility_timer = 0.0f;
-	invincibility_duration = 2.0f;
+	invincibility_duration = 3.0f;
 	visible = true;
 
 	coins = 0;
@@ -21,7 +21,6 @@ Player::Player(float ts) {
 	shoot_direction = { 0, 0 };
 	fire_cooldown = 0.0f;
 	fire_rate = 0.2f;
-
 }
 
 void Player::move(int screen_width, int screen_height) {
@@ -95,12 +94,19 @@ void Player::reset_fire_cooldown() {
 	fire_cooldown = fire_rate;
 }
 
-void Player::take_damage(int amount) {
+bool Player::take_damage(int amount) {
 	if (!invincible) {
 		health -= amount;
 		invincible = true;
-	invincibility_timer = invincibility_duration;
+		invincibility_timer = invincibility_duration;
+		return true;
 	}
+	return false;
+}
+
+void Player::reset_invincibility() {
+	invincible = false;
+	invincibility_timer = 0.0f;
 }
 
 void Player::update_invincibility(float delta_time) {
@@ -109,16 +115,13 @@ void Player::update_invincibility(float delta_time) {
 		if (invincibility_timer <= 0.0f) {
 			reset_invincibility();
 		}
-
 		visible = (static_cast<int>(invincibility_timer * 10) % 2) == 0;
 	}
 }
 
-void Player::reset_invincibility() {
-	invincible = false;
-	invincibility_timer = 0.0f;
-}
-
 int Player::get_health() const {
 	return health;
+}
+
+Player::~Player() {
 }
