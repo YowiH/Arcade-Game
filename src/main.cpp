@@ -27,7 +27,7 @@ float frames_since_level_start = 0;
 Vector2 player_size{ tile_size, tile_size};
 Vector2 player_pos{ tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
 Vector2 player_mov_dir{0, 0};
-int player_Speed = 2;
+float player_Speed = 2;
 int Mov_dir;
 int player_walk_anim_counter = 0;
 bool player_right_foot;
@@ -84,7 +84,7 @@ struct bullet {
 };
 
 struct enemy {
-	int speed = 1;
+	float speed = 1.25;
 	Vector2 velocity;
 	Vector2 position;
 	int hp;
@@ -134,6 +134,8 @@ std::vector<powerUp> powerUp_pool{};
 //death animations
 std::vector<death_anim> deathAnim_tracker{};
 std::vector<death_anim> deathAnim_pool{};
+
+std::vector<Map> map_list{ Map("AREAS/area1_1.txt"), Map("AREAS/area1_2.txt"), };
 
 //TEXTURES
 //Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
