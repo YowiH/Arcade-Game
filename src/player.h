@@ -2,8 +2,26 @@
 
 #include "raylib.h"
 #include <vector>
+#include <string>
 
 #include "bullet.h"
+
+enum class player_animation {
+	IDLE,
+	USING_ITEM,
+	DOWN,
+	DOWN_M1,
+	DOWN_M2,
+	RIGHT,
+	RIGHT_M1,
+	RIGHT_M2,
+	UP,
+	UP_M1,
+	UP_M2,
+	LEFT,
+	LEFT_M1,
+	LEFT_M2
+};
 
 class Player {
 private:
@@ -21,14 +39,31 @@ private:
 	int speed;
 	int tiles_per_second;
 
+	float animation_timer;
+	float animation_speed;
+
 	Vector2 shoot_direction;
 	float fire_cooldown;
 	float fire_rate;
 
+	player_animation current_animation;
+	player_animation last_direction;
+
+	float frame_width;
+	float frame_height;
+	float frame_position_x;
+	float frame_position_y;
+	int frame_columns;
+	int frame_rows;
+	int frame_index;
+	Rectangle frame_rectangle;
+	Texture2D player_sprite_sheet;
 public:
 	Player(float ts);
 
+	bool is_moving();
 	void move(int screen_width, int screen_height);
+	void set_animation(player_animation animation);
 	void draw();
 
 	void set_position(Vector2 new_position);
@@ -36,6 +71,7 @@ public:
 	float get_tile_size() const;
 	Vector2 get_center() const;
 
+	bool is_shooting();
 	Vector2 get_shoot_direction();
 	bool can_shoot();
 	void reset_fire_cooldown();
@@ -43,8 +79,11 @@ public:
 	bool take_damage(int amount);
 	void reset_invincibility();
 	void update_invincibility(float delta_time);
+	void update_texture(float delta_time);
 	void reset_health();
 	int get_health() const;
+
+	void load_texture();
 
 	~Player();
 };

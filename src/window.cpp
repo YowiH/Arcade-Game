@@ -43,6 +43,8 @@ void Window::load() {
     
     dirt = LoadTexture("sprites/dirt.png");
     path = LoadTexture("sprites/path.png");
+
+    player.load_texture();
 }
 
 void Window::unload() {
@@ -75,6 +77,7 @@ void Window::update() {
 
     player.move(width, height);
     player.update_invincibility(delta_time);
+    player.update_texture(delta_time);
 
     Vector2 direction = player.get_shoot_direction();
     if ((direction.x != 0 || direction.y != 0) && player.can_shoot()) {
