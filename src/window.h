@@ -3,7 +3,9 @@
 #include "raylib.h"
 #include "resource_dir.h"
 
+#include <fstream>
 #include <vector>
+#include <string>
 
 #include "player.h"
 #include "bullet.h"
@@ -28,7 +30,10 @@ private:
 
 	Sound hurt;
 
+	std::vector<std::string> map_data;
+
 	Texture2D dirt;
+	Texture2D path;
 
 public:
 	Window(float ts);

@@ -24,7 +24,23 @@ void Window::load() {
 
     hurt = LoadSound("audio/FX/hurt.wav");
 
+    std::ifstream map_file("areas/1-1.txt");
+    std::string line;
+    while (std::getline(map_file, line)) {
+        std::string cleaned;
+
+        for (char c : line) {
+            if (c != ' ') {
+                cleaned += c;
+            }
+        }
+        if (!cleaned.empty()) {
+            map_data.push_back(cleaned);
+        }
+    }
+    
     dirt = LoadTexture("sprites/dirt.png");
+    path = LoadTexture("sprites/path.png");
 }
 
 void Window::update() {
@@ -51,13 +67,13 @@ void Window::update() {
         Vector2 spawn_position;
         switch (edge) {
             case 0: // top
-                spawn_position = { GetRandomValue(8, 10) * tile_size, 0};
+                spawn_position = { GetRandomValue(7, 9) * tile_size, 0};
                 break;
             case 1: // bottom
-                spawn_position = { GetRandomValue(8, 10) * tile_size, height - tile_size};
+                spawn_position = { GetRandomValue(7, 9) * tile_size, height - tile_size};
                 break;
             case 2: // left
-                spawn_position = { 0, GetRandomValue(8, 10) * tile_size};
+                spawn_position = { 0, GetRandomValue(7, 9) * tile_size};
                 break;
             case 3: // right
                 spawn_position = { width - tile_size, GetRandomValue(8, 10) * tile_size};
@@ -96,9 +112,17 @@ void Window::draw() {
     BeginDrawing();
     ClearBackground(BLACK);
 
-    for (int y = 0; y < 16; y++) {
-        for (int x = 0; x < 16; x++) {
-            DrawTextureEx(dirt, { x * tile_size, y * tile_size }, 0.0f, tile_size / 16.0f, WHITE);
+    for (int y = 0; y < map_data.size(); y++) {
+        for (int x = 0; x < map_data[y].size(); x++) {
+            char tile = map_data[y][x];
+            Vector2 position = { x * tile_size, y * tile_size };
+
+            if (tile == 'D') {
+                DrawTextureEx(dirt, position, 0.0f, tile_size / tiles, WHITE);
+            }
+            else if (tile == 'P') {
+                DrawTextureEx(path, position, 0.0f, tile_size / tiles, WHITE);
+            }
         }
     }
 
@@ -122,7 +146,10 @@ void Window::unload() {
 
     UnloadSound(hurt);
 
+    map_data.clear();
+
     UnloadTexture(dirt);
+    UnloadTexture(path);
 
     CloseWindow();
 }
