@@ -1,28 +1,23 @@
 #include "player.h"
 #include "raymath.h"
 
-Player::Player(float ts) {
-	tile_size = ts;
+Player::Player(float tile_size, float sw, float sh) {
+
+	size = { tile_size, tile_size };
+	position = { sw / 2, sh / 2};
 
 	health = 3;
+	coins = 0;
+	tiles_per_second = 3.0f;
+	speed = tile_size * tiles_per_second;
+
+	visible = true;
 	invincible = false;
 	invincibility_timer = 0.0f;
 	invincibility_duration = 3.0f;
-	visible = true;
-
-	coins = 0;
 	
-	size = { tile_size, tile_size };
-	position = { 50.0f, 50.0f };
-
-	tiles_per_second = 6.0f;
-	speed = tile_size * tiles_per_second;
 	animation_timer = 0.0f;
 	animation_speed = 0.2f;
-
-	shoot_direction = { 0, 0 };
-	fire_cooldown = 0.0f;
-	fire_rate = 0.2f;
 
 	frame_columns = 7;
 	frame_rows = 2;
@@ -30,6 +25,11 @@ Player::Player(float ts) {
 	frame_height = 16.0f;
 	frame_index = 0;
 
+	shoot_direction = { 0, 0 };
+	fire_cooldown = 0.0f;
+	fire_rate = 0.2f;
+
+	current_animation = player_animation::IDLE;
 	last_direction = player_animation::IDLE;
 }
 
@@ -46,13 +46,13 @@ void Player::move(int screen_width, int screen_height) {
 			if (shoot_direction.y == -1) {
 				set_animation(player_animation::UP);
 			}
-			if (shoot_direction.y == 1) {
+			else if (shoot_direction.y == 1) {
 				set_animation(player_animation::DOWN);
 			}
 			if (shoot_direction.x == -1) {
 				set_animation(player_animation::LEFT);
 			}
-			if (shoot_direction.x == 1) {
+			else if (shoot_direction.x == 1) {
 				set_animation(player_animation::RIGHT);
 			}
 		}
@@ -99,7 +99,7 @@ void Player::set_animation(player_animation animation) {
 	current_animation = animation;
 }
 
-void Player::draw() {
+void Player::draw(float tile_size) {
 	if (visible) {
 		Rectangle dest_rectangle = { position.x, position.y, tile_size, tile_size };
 		Vector2 origin = { 0,0 };
@@ -109,15 +109,10 @@ void Player::draw() {
 
 void Player::set_position(Vector2 new_position) {
 	position = new_position;
-
 }
 
 Vector2 Player::get_position() const {
 	return position;
-}
-
-float Player::get_tile_size() const {
-	return tile_size;
 }
 
 Vector2 Player::get_center() const {

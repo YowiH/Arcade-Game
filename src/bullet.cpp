@@ -1,8 +1,7 @@
 #include "bullet.h"
 #include "raymath.h"
 
-Bullet::Bullet(float ts, Vector2 position_start, Vector2 direction_start) {
-	tile_size = ts;
+Bullet::Bullet(float tile_size, Vector2 position_start, Vector2 direction_start) {
 	position = position_start;
 	direction = direction_start;
 
@@ -30,4 +29,8 @@ float Bullet::get_radius() const {
 
 bool Bullet::is_off_screen(int screen_width, int screen_height) {
 	return position.x < 0 || position.x > screen_width || position.y < 0 || position.y > screen_height;
+}
+
+Bullet::~Bullet() {
+
 }

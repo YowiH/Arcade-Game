@@ -33,7 +33,6 @@ private:
 
 	int coins;
 	
-	float tile_size;
 	Vector2 size;
 	Vector2 position;
 	int speed;
@@ -51,24 +50,23 @@ private:
 
 	float frame_width;
 	float frame_height;
-	float frame_position_x;
-	float frame_position_y;
+
 	int frame_columns;
 	int frame_rows;
 	int frame_index;
+
 	Rectangle frame_rectangle;
 	Texture2D player_sprite_sheet;
 public:
-	Player(float ts);
+	Player(float ts, float sw, float sh);
 
 	bool is_moving();
 	void move(int screen_width, int screen_height);
 	void set_animation(player_animation animation);
-	void draw();
+	void draw(float tile_size);
 
 	void set_position(Vector2 new_position);
 	Vector2 get_position() const;
-	float get_tile_size() const;
 	Vector2 get_center() const;
 
 	bool is_shooting();
