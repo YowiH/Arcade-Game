@@ -310,6 +310,7 @@ void InitGame() {
 	SetTargetFPS(60);
 	map_list = { Map("AREAS/area1_1.txt"), Map("AREAS/area1_2.txt"), Map("AREAS/area1_3.txt") };
 	active_map = map_list[level_count];
+	level_count++;
 	InitAudioDevice();
 	LoadAssets();
 	//start playing music
@@ -882,13 +883,13 @@ void UpdateGame() {//update variables and positions
 	//ANIMATIONS
 	animationManager();
 
-	if (IsKeyDown('N') && frames_since_level_start >= level_length) {
+	if (IsKeyDown('N') && frames_since_level_start >= level_length && level_count < map_list.size()) {
 		frames_since_level_start = 0;
 		//delete all obstacles
 		obsticle_tracker.clear();
 		obstacles_positioned = false;
-		level_count++;
 		active_map = map_list[level_count];
+		level_count++;
 	}
 }
 
