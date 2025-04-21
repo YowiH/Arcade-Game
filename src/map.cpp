@@ -56,6 +56,10 @@ void Map::load(float tile_size) {
 
     this->bushes = bushes;
 
+    // load music
+    music = LoadMusicStream("audio/songs/JOTPK_song.wav");
+    PlayMusicStream(music);
+
     // load audio
     hurt = LoadSound("audio/FX/death_player.mp3");
     shoot_1 = LoadSound("audio/FX/shoot_1.mp3");
@@ -80,6 +84,8 @@ void Map::load(float tile_size) {
 }
 
 void Map::update(float delta_time) {
+    UpdateMusicStream(music);
+
     bush_frame_time += delta_time;
     if (bush_frame_time >= bush_frame_duration) {
         bush_frame = (bush_frame + 1) % 2;
@@ -179,7 +185,19 @@ Map::~Map() {
     map_data.clear();
 
     // unload audio
+    UnloadMusicStream(music);
     UnloadSound(hurt);
+    UnloadSound(shoot_1);
+    UnloadSound(shoot_2);
+    UnloadSound(shoot_3);
+    UnloadSound(shoot_4);
+    UnloadSound(shoot_5);
+    UnloadSound(shoot_6);
+    UnloadSound(shoot_7);
+    UnloadSound(enemy_death_1);
+    UnloadSound(enemy_death_2);
+    UnloadSound(enemy_death_3);
+    UnloadSound(enemy_death_4);
     CloseAudioDevice();
 
     // unload textures

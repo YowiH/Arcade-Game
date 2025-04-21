@@ -14,6 +14,7 @@ private:
 	float frame_time;
 	float timer;
 
+	Music music;
 	Sound hurt;
 	Sound shoot_1;
 	Sound shoot_2;

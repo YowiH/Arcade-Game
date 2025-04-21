@@ -54,7 +54,7 @@ void Player::update(float tile_size, float delta_time, int screen_width, int scr
 			last_direction = player_animation::UP_M1;
 		}
 	}
-	if (IsKeyDown(KEY_S)) {
+	else if (IsKeyDown(KEY_S)) {
 		new_position.y += speed * delta_time;
 
 		if (last_direction != player_animation::DOWN_M1 && last_direction != player_animation::DOWN_M2) {
@@ -70,7 +70,7 @@ void Player::update(float tile_size, float delta_time, int screen_width, int scr
 			last_direction = player_animation::LEFT_M1;
 		}
 	}
-	if (IsKeyDown(KEY_D)) {
+	else if (IsKeyDown(KEY_D)) {
 		new_position.x += speed * delta_time;
 
 		if (last_direction != player_animation::RIGHT_M1 && last_direction != player_animation::RIGHT_M2) {
