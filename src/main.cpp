@@ -100,7 +100,7 @@ int main() {
             enemy_spawn_timer = enemy_spawn_rate;
         }
         for (int i = enemies.size() - 1; i >= 0; i--) {
-            enemies[i].move(tile_size, player.get_center(), delta_time);
+            enemies[i].update(tile_size, player.get_center(), delta_time);
 
             bool enemy_hit = false;
             for (int j = bullets.size() - 1; j >= 0; j--) {
@@ -145,10 +145,10 @@ int main() {
             bullet.draw();
         }
         for (Enemy& enemy : enemies) {
-            enemy.draw();
+            enemy.draw(tile_size);
         }
 
-        DrawText(TextFormat("Health %d", player.get_health()), 10, 10, 20, RED);
+        DrawText(TextFormat("%d", player.get_health()), 10, 10, 20, WHITE);
 
         EndDrawing();
     }
