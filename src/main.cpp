@@ -840,6 +840,24 @@ void animationManager() {
 	}
 }
 
+void changeLevel() {
+	if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {
+		frames_since_level_start = 0;
+		//delete all obstacles
+		obsticle_tracker.clear();
+		obstacles_positioned = false;
+		if (level_count < map_list.size()) {
+			active_map = map_list[level_count];
+			level_count++;
+		}
+		else {
+			level_count = 0;
+			active_map = map_list[level_count];
+			level_count++;
+		}
+	}
+}
+
 void UpdateGame() {//update variables and positions
 
 	//MUSIC
@@ -888,14 +906,7 @@ void UpdateGame() {//update variables and positions
 	//ANIMATIONS
 	animationManager();
 
-	if (IsKeyDown('N') && frames_since_level_start >= level_length && level_count < map_list.size()) {
-		frames_since_level_start = 0;
-		//delete all obstacles
-		obsticle_tracker.clear();
-		obstacles_positioned = false;
-		active_map = map_list[level_count];
-		level_count++;
-	}
+	changeLevel();
 }
 
 
