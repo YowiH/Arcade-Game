@@ -79,9 +79,16 @@ void Player::update(float tile_size, float delta_time, int screen_width, int scr
 		}
 	}
 	
-	Rectangle new_rectangle = { new_position.x, new_position.y, size.x, size.y };
-	if (!map.check_collision(new_rectangle)) {
-		position = new_position;
+	Vector2 try_x = { new_position.x, position.y };
+	Rectangle rectangle_x = { try_x.x, try_x.y, size.x, size.y };
+	if (!map.check_collision(rectangle_x)) {
+		position = try_x;
+	}
+
+	Vector2 try_y = { position.x, new_position.y };
+	Rectangle rectangle_y = { try_y.x, try_y.y, size.x, size.y };
+	if (!map.check_collision(rectangle_y)) {
+		position.y = try_y.y;
 	}
 
 	position.x = Clamp(position.x, 0, screen_width - size.x);
