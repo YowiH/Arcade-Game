@@ -7,6 +7,7 @@ Map::Map() {
 
     hurt = Sound{ 0 };
 
+    jopk_logo = Texture2D{ 0 };
     dirt = Texture2D{ 0 };
     path = Texture2D{ 0 };
     dirt_stones = Texture2D{ 0 };
@@ -76,6 +77,7 @@ void Map::load(float tile_size) {
 
 
     // load textures
+    jopk_logo = LoadTexture("sprites/JOPK_logo.png");
     dirt = LoadTexture("sprites/dirt.png");
     path = LoadTexture("sprites/path.png");
     dirt_stones = LoadTexture("sprites/dirt_stones.png");
@@ -178,6 +180,10 @@ bool Map::check_collision(Rectangle player_rectangle) {
         }
     }
     return false;
+}
+
+Texture2D Map::get_jopk_logo() const {
+    return jopk_logo;
 }
 
 Map::~Map() {

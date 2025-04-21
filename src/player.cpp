@@ -6,7 +6,7 @@
 Player::Player(float tile_size, float sw, float sh) {
 
 	size = { tile_size, tile_size };
-	position = { sw / 2, sh / 2};
+	position = { sw / 2, sh / 2 };
 
 	health = 3;
 	coins = 0;
@@ -17,7 +17,7 @@ Player::Player(float tile_size, float sw, float sh) {
 	invincible = false;
 	invincibility_timer = 0.0f;
 	invincibility_duration = 3.0f;
-	
+
 	animation_timer = 0.0f;
 	animation_speed = 0.2f;
 
@@ -54,7 +54,7 @@ void Player::update(float tile_size, float delta_time, int screen_width, int scr
 			last_direction = player_animation::UP_M1;
 		}
 	}
-	else if (IsKeyDown(KEY_S)) {
+	if (IsKeyDown(KEY_S)) {
 		new_position.y += speed * delta_time;
 
 		if (last_direction != player_animation::DOWN_M1 && last_direction != player_animation::DOWN_M2) {
@@ -70,7 +70,7 @@ void Player::update(float tile_size, float delta_time, int screen_width, int scr
 			last_direction = player_animation::LEFT_M1;
 		}
 	}
-	else if (IsKeyDown(KEY_D)) {
+	if (IsKeyDown(KEY_D)) {
 		new_position.x += speed * delta_time;
 
 		if (last_direction != player_animation::RIGHT_M1 && last_direction != player_animation::RIGHT_M2) {
@@ -78,7 +78,7 @@ void Player::update(float tile_size, float delta_time, int screen_width, int scr
 			last_direction = player_animation::RIGHT_M1;
 		}
 	}
-	
+
 	Vector2 try_x = { new_position.x, position.y };
 	Rectangle rectangle_x = { try_x.x, try_x.y, size.x, size.y };
 	if (!map.check_collision(rectangle_x)) {

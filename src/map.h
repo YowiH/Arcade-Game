@@ -28,6 +28,7 @@ private:
 	Sound enemy_death_3;
 	Sound enemy_death_4;
 
+	Texture2D jopk_logo;
 	Texture2D dirt;
 	Texture2D path;
 	Texture2D dirt_stones;
@@ -49,6 +50,7 @@ public:
 
 	bool check_collision(Rectangle player_rectangle);
 
+	Texture2D get_jopk_logo() const;
 	Sound get_hurt() const;
 	Sound get_shoot() const;
 	Sound get_enemy_death() const;

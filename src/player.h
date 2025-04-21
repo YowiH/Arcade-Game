@@ -35,7 +35,7 @@ private:
 
 	// picking up
 	int coins;
-	
+
 	// moving
 	Vector2 size;
 	Vector2 position;
