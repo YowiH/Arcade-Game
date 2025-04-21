@@ -57,7 +57,19 @@ void Map::load(float tile_size) {
     this->bushes = bushes;
 
     // load audio
-    hurt = LoadSound("audio/FX/hurt.wav");
+    hurt = LoadSound("audio/FX/death_player.mp3");
+    shoot_1 = LoadSound("audio/FX/shoot_1.mp3");
+    shoot_2 = LoadSound("audio/FX/shoot_2.mp3");
+    shoot_3 = LoadSound("audio/FX/shoot_3.mp3");
+    shoot_4 = LoadSound("audio/FX/shoot_4.mp3");
+    shoot_5 = LoadSound("audio/FX/shoot_5.mp3");
+    shoot_6 = LoadSound("audio/FX/shoot_6.mp3");
+    shoot_7 = LoadSound("audio/FX/shoot_7.mp3");
+    enemy_death_1 = LoadSound("audio/FX/enemy_death_1.mp3");
+    enemy_death_2 = LoadSound("audio/FX/enemy_death_2.mp3");
+    enemy_death_3 = LoadSound("audio/FX/enemy_death_3.mp3");
+    enemy_death_4 = LoadSound("audio/FX/enemy_death_4.mp3");
+
 
     // load textures
     dirt = LoadTexture("sprites/dirt.png");
@@ -108,6 +120,49 @@ void Map::draw(float tile_size, int tiles) {
 
 Sound Map::get_hurt() const {
     return hurt;
+}
+
+Sound Map::get_shoot() const {
+    switch (GetRandomValue(1, 7)) {
+    case 1:
+        return shoot_1;
+        break;
+    case 2:
+        return shoot_2;
+        break;
+    case 3:
+        return shoot_3;
+        break;
+    case 4:
+        return shoot_4;
+        break;
+    case 5:
+        return shoot_5;
+        break;
+    case 6:
+        return shoot_6;
+        break;
+    case 7:
+        return shoot_7;
+        break;
+    }
+}
+
+Sound Map::get_enemy_death() const {
+    switch (GetRandomValue(1, 4)) {
+    case 1:
+        return enemy_death_1;
+        break;
+    case 2:
+        return enemy_death_2;
+        break;
+    case 3:
+        return enemy_death_3;
+        break;
+    case 4:
+        return enemy_death_4;
+        break;
+    }
 }
 
 bool Map::check_collision(Rectangle player_rectangle) {

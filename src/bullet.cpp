@@ -9,14 +9,16 @@ Bullet::Bullet(float tile_size, Vector2 position_start, Vector2 direction_start)
 	speed = tile_size * tiles_per_second;
 	
 	radius = tile_size / 8.0f;
+
+	bullet = LoadTexture("sprites/bullet.png");
 }
 
-void Bullet::move(float delta_time) {
+void Bullet::update(float delta_time) {
 	position = Vector2Add(position, Vector2Scale(direction, speed * delta_time));
 }
 
 void Bullet::draw() {
-	DrawCircleV(position, radius, RED);
+	DrawRectangleLines(position.x, position.y, radius, radius, BLACK);
 }
 
 Vector2 Bullet::get_position() const {

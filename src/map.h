@@ -15,6 +15,17 @@ private:
 	float timer;
 
 	Sound hurt;
+	Sound shoot_1;
+	Sound shoot_2;
+	Sound shoot_3;
+	Sound shoot_4;
+	Sound shoot_5;
+	Sound shoot_6;
+	Sound shoot_7;
+	Sound enemy_death_1;
+	Sound enemy_death_2;
+	Sound enemy_death_3;
+	Sound enemy_death_4;
 
 	Texture2D dirt;
 	Texture2D path;
@@ -38,6 +49,8 @@ public:
 	bool check_collision(Rectangle player_rectangle);
 
 	Sound get_hurt() const;
+	Sound get_shoot() const;
+	Sound get_enemy_death() const;
 
 	~Map();
 };
