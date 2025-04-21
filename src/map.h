@@ -19,7 +19,11 @@ private:
 	Texture2D path;
 	Texture2D dirt_stones;
 	Texture2D dirt_grass;
-
+	Texture2D bush_spritesheet;
+	
+	int bush_frame;
+	float bush_frame_time;
+	float bush_frame_duration;
 public:
 	Map();
 
@@ -28,6 +32,7 @@ public:
 	void load_map();
 	void unload_map();
 
+	void update(float delta_time);
 	void draw(float tile_size, int tiles);
 
 	void load_audio();

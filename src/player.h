@@ -56,13 +56,14 @@ private:
 	int frame_index;
 
 	Rectangle frame_rectangle;
-	Texture2D player_sprite_sheet;
+	Texture2D player_spritesheet;
 public:
 	Player(float ts, float sw, float sh);
 
 	bool is_moving();
 	void move(int screen_width, int screen_height);
 	void set_animation(player_animation animation);
+	void update_texture(float delta_time);
 	void draw(float tile_size);
 
 	void set_position(Vector2 new_position);
@@ -77,7 +78,6 @@ public:
 	bool take_damage(int amount);
 	void reset_invincibility();
 	void update_invincibility(float delta_time);
-	void update_texture(float delta_time);
 	void reset_health();
 	int get_health() const;
 

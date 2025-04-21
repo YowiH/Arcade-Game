@@ -59,6 +59,8 @@ int main() {
             }
         }
 
+        map.update(delta_time);
+
         player.move(width, height);
         player.update_invincibility(delta_time);
         player.update_texture(delta_time);

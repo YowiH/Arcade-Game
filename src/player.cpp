@@ -24,6 +24,8 @@ Player::Player(float tile_size, float sw, float sh) {
 	frame_width = 16.0f;
 	frame_height = 16.0f;
 	frame_index = 0;
+	frame_rectangle = { 0 };
+	player_spritesheet = { 0 };
 
 	shoot_direction = { 0, 0 };
 	fire_cooldown = 0.0f;
@@ -99,11 +101,58 @@ void Player::set_animation(player_animation animation) {
 	current_animation = animation;
 }
 
+void Player::update_texture(float delta_time) {
+	if (is_moving()) {
+		animation_timer += delta_time;
+
+		if (animation_timer >= animation_speed) {
+			switch (current_animation) {
+				case player_animation::UP_M1:
+					set_animation(player_animation::UP_M2);
+					break;
+				case player_animation::UP_M2:
+					set_animation(player_animation::UP_M1);
+					break;
+				case player_animation::DOWN_M1:
+					set_animation(player_animation::DOWN_M2);
+					break;
+				case player_animation::DOWN_M2:
+					set_animation(player_animation::DOWN_M1);
+					break;
+				case player_animation::LEFT_M1:
+					set_animation(player_animation::LEFT_M2);
+					break;
+				case player_animation::LEFT_M2:
+					set_animation(player_animation::LEFT_M1);
+					break;
+				case player_animation::RIGHT_M1:
+					set_animation(player_animation::RIGHT_M2);
+					break;
+				case player_animation::RIGHT_M2:
+					set_animation(player_animation::RIGHT_M1);
+					break;
+				default:
+					break;
+			}
+			animation_timer = 0.0f;
+		}
+	}
+
+	int anim_index = static_cast<int>(current_animation);
+	int column = anim_index % frame_columns;
+	int row = anim_index / frame_columns;
+	
+	frame_rectangle.x = column * frame_width;
+	frame_rectangle.y = row * frame_height;
+	frame_rectangle.width = frame_width;
+	frame_rectangle.height = frame_height;
+}
+
 void Player::draw(float tile_size) {
 	if (visible) {
 		Rectangle dest_rectangle = { position.x, position.y, tile_size, tile_size };
 		Vector2 origin = { 0,0 };
-		DrawTexturePro(player_sprite_sheet, frame_rectangle, dest_rectangle, origin, 0.0f, WHITE);
+		DrawTexturePro(player_spritesheet, frame_rectangle, dest_rectangle, origin, 0.0f, WHITE);
 	}
 }
 
@@ -183,52 +232,6 @@ void Player::update_invincibility(float delta_time) {
 	}
 }
 
-void Player::update_texture(float delta_time) {
-	if (is_moving()) {
-		animation_timer += delta_time;
-
-		if (animation_timer >= animation_speed) {
-			switch (current_animation) {
-				case player_animation::UP_M1:
-					set_animation(player_animation::UP_M2);
-					break;
-				case player_animation::UP_M2:
-					set_animation(player_animation::UP_M1);
-					break;
-				case player_animation::DOWN_M1:
-					set_animation(player_animation::DOWN_M2);
-					break;
-				case player_animation::DOWN_M2:
-					set_animation(player_animation::DOWN_M1);
-					break;
-				case player_animation::LEFT_M1:
-					set_animation(player_animation::LEFT_M2);
-					break;
-				case player_animation::LEFT_M2:
-					set_animation(player_animation::LEFT_M1);
-					break;
-				case player_animation::RIGHT_M1:
-					set_animation(player_animation::RIGHT_M2);
-					break;
-				case player_animation::RIGHT_M2:
-					set_animation(player_animation::RIGHT_M1);
-					break;
-				default:
-					break;
-			}
-			animation_timer = 0.0f;
-		}
-	}
-
-	int anim_index = static_cast<int>(current_animation);
-	int column = anim_index % frame_columns;
-	int row = anim_index / frame_columns;
-
-	frame_rectangle.x = column * frame_width;
-	frame_rectangle.y = row * frame_height;
-	frame_rectangle.width = frame_width;
-	frame_rectangle.height = frame_height;
-}
 
 void Player::reset_health() {
 	health = 3;
@@ -239,7 +242,7 @@ int Player::get_health() const {
 }
 
 void Player::load_texture() {
-	player_sprite_sheet = LoadTexture("sprites/player_sprite_sheet.png");
+	player_spritesheet = LoadTexture("sprites/player_spritesheet.png");
 }
 
 Player::~Player() {

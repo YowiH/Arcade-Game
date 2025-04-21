@@ -11,6 +11,11 @@ Map::Map() {
     path = Texture2D{ 0 };
     dirt_stones = Texture2D{ 0 };
     dirt_grass = Texture2D{ 0 };
+    bush_spritesheet = Texture2D{ 0 };
+
+    bush_frame = 0;
+    bush_frame_time = 0.0f;
+    bush_frame_duration = 0.6f;
 }
 
 void Map::load_map() {
@@ -34,6 +39,14 @@ void Map::unload_map() {
 	map_data.clear();
 }
 
+void Map::update(float delta_time) {
+    bush_frame_time += delta_time;
+    if (bush_frame_time >= bush_frame_duration) {
+        bush_frame = (bush_frame + 1) % 2;
+        bush_frame_time = 0.0f;
+    }
+}
+
 void Map::draw(float tile_size, int tiles) {
     for (int y = 0; y < map_data.size(); y++) {
         for (int x = 0; x < map_data[y].size(); x++) {
@@ -53,7 +66,13 @@ void Map::draw(float tile_size, int tiles) {
                 DrawTextureEx(dirt_grass, position, 0.0f, tile_size / tiles, WHITE);
             }
             else if (tile == 'B') {
+                int frame_width = bush_spritesheet.width / 2;
+                int frame_height = bush_spritesheet.height;
+                Rectangle source_rectangle = { bush_frame * frame_width, 0, frame_width, frame_height };
+                Rectangle destination_rectangle = { position.x, position.y, tile_size, tile_size };
+                Vector2 origin = { 0, 0 };
 
+                DrawTexturePro(bush_spritesheet, source_rectangle, destination_rectangle, origin, 0.0f, WHITE);
             }
         }
     }
@@ -77,6 +96,7 @@ void Map::load_textures() {
     path = LoadTexture("sprites/path.png");
     dirt_stones = LoadTexture("sprites/dirt_stones.png");
     dirt_grass = LoadTexture("sprites/dirt_grass.png");
+    bush_spritesheet = LoadTexture("sprites/bush_spritesheet.png");
 }
 
 void Map::unload_textures() {
