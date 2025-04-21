@@ -66,6 +66,7 @@ int main() {
             break;
 
         case GameState::GAME:
+
             if (player.get_health() <= 0) {
                 game_state = GameState::GAME_OVER;
             }
@@ -131,6 +132,7 @@ int main() {
                 if (CheckCollisionRecs(player_rectangle, enemy_rectangle)) {
                     if (player.set_damage(1)) {
                         PlaySound(map.get_hurt());
+                        enemies.clear();
                     }
                     break;
                 }
