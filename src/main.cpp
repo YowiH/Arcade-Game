@@ -22,8 +22,6 @@ int main() {
     Player player(tile_size, width, height);
 
     std::vector<Bullet> bullets;
-    float fire_rate = 0.2f;
-    float fire_cooldown = 0.0f;
 
     std::vector<Enemy> enemies;
     float enemy_spawn_timer = 0.0f;
@@ -36,17 +34,20 @@ int main() {
     InitWindow(width, height, "Journey of the Prairie King");
     SetTargetFPS(60);
     SearchAndSetResourceDir("../resources");
+    InitAudioDevice();
+    SetMasterVolume(1.0f);
 
-    map.load_audio();
-    map.load_textures();
-    map.load_map();
-
-    player.load_texture();
+    map.load(tile_size);
+    player.load();
 
     while (!WindowShouldClose()) {
         // ------------------------------------------------- update
         float delta_time = GetFrameTime();
 
+        // game update
+        if (player.get_health() <= 0) {
+            is_game_over = true;
+        }
         if (is_game_over) {
             if (IsKeyPressed(KEY_ENTER)) {
                 player.reset_health();
@@ -60,11 +61,9 @@ int main() {
         }
 
         map.update(delta_time);
+        player.update(tile_size, delta_time, width, height, map);
 
-        player.move(width, height);
-        player.update_invincibility(delta_time);
-        player.update_texture(delta_time);
-
+        // bullet update
         Vector2 direction = player.get_shoot_direction();
         if ((direction.x != 0 || direction.y != 0) && player.can_shoot()) {
             bullets.push_back(Bullet(tile_size, player.get_center(), direction));
@@ -77,6 +76,7 @@ int main() {
             }
         }
 
+        // enemy update
         enemy_spawn_timer -= delta_time;
         if (enemy_spawn_timer <= 0.0f) {
             int edge = GetRandomValue(0, 3);
@@ -93,6 +93,7 @@ int main() {
                 break;
             case 3: // right
                 spawn_position = { width - tile_size, GetRandomValue(7, 9) * tile_size };
+                break;
             }
             enemies.push_back(Enemy(tile_size, spawn_position, width, height));
             enemy_spawn_timer = enemy_spawn_rate;
@@ -116,15 +117,11 @@ int main() {
             Rectangle player_rectangle = { player.get_position().x, player.get_position().y, tile_size, tile_size };
             Rectangle enemy_rectangle = { enemy.get_position().x, enemy.get_position().y, tile_size, tile_size };
             if (CheckCollisionRecs(player_rectangle, enemy_rectangle)) {
-                if (player.take_damage(1)) {
-                    PlaySound(map.hurt);
+                if (player.set_damage(1)) {
+                    PlaySound(map.get_hurt());
                 }
                 break;
             }
-        }
-
-        if (player.get_health() <= 0) {
-            is_game_over = true;
         }
 
         // ---------------------------------------------------------- draw
@@ -145,7 +142,6 @@ int main() {
         for (Bullet& bullet : bullets) {
             bullet.draw();
         }
-
         for (Enemy& enemy : enemies) {
             enemy.draw();
         }
@@ -156,9 +152,6 @@ int main() {
     }
 
     // -------------------------------------------------- unload
-    map.unload_audio();
-    map.unload_map();
-    map.unload_textures();
 
     CloseWindow();
     return 0;

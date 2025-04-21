@@ -5,6 +5,7 @@
 #include <string>
 
 #include "bullet.h"
+#include "map.h"
 
 enum class player_animation {
 	IDLE,
@@ -25,63 +26,64 @@ enum class player_animation {
 
 class Player {
 private:
+	// taking damage
 	int health;
 	bool invincible;
 	float invincibility_timer;
 	float invincibility_duration;
 	bool visible;
 
+	// picking up
 	int coins;
 	
+	// moving
 	Vector2 size;
 	Vector2 position;
 	int speed;
 	int tiles_per_second;
 
+	// texturing
+	Rectangle source_rectangle;
+	Texture2D player_spritesheet;
+
 	float animation_timer;
 	float animation_speed;
-
-	Vector2 shoot_direction;
-	float fire_cooldown;
-	float fire_rate;
-
 	player_animation current_animation;
 	player_animation last_direction;
-
 	float frame_width;
 	float frame_height;
-
 	int frame_columns;
 	int frame_rows;
 	int frame_index;
 
-	Rectangle frame_rectangle;
-	Texture2D player_spritesheet;
+	// shooting
+	Vector2 shoot_direction;
+	float fire_cooldown;
+	float fire_rate;
+
 public:
 	Player(float ts, float sw, float sh);
 
-	bool is_moving();
-	void move(int screen_width, int screen_height);
-	void set_animation(player_animation animation);
-	void update_texture(float delta_time);
+	void load();
+	void update(float tile_size, float delta_time, int screen_width, int screen_height, Map& map);
 	void draw(float tile_size);
 
-	void set_position(Vector2 new_position);
+	int get_health() const;
 	Vector2 get_position() const;
 	Vector2 get_center() const;
-
-	bool is_shooting();
 	Vector2 get_shoot_direction();
-	bool can_shoot();
+
+	void set_animation(player_animation animation);
+	void set_position(Vector2 new_position);
+	bool set_damage(int amount);
+
 	void reset_fire_cooldown();
-
-	bool take_damage(int amount);
 	void reset_invincibility();
-	void update_invincibility(float delta_time);
 	void reset_health();
-	int get_health() const;
 
-	void load_texture();
+	bool is_moving();
+	bool is_shooting();
+	bool can_shoot();
 
 	~Player();
 };

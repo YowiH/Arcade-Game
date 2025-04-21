@@ -18,25 +18,53 @@ Map::Map() {
     bush_frame_duration = 0.6f;
 }
 
-void Map::load_map() {
+void Map::load(float tile_size) {
+
+    // load map
     std::ifstream map_file("areas/1-1.txt");
+    if (!map_file.is_open()) {
+        TraceLog(LOG_ERROR, "Failed to load map file");
+        return;
+    }
+
     std::string line;
+    int y = 0;
+
+    std::vector<Rectangle> bushes;
+
     while (std::getline(map_file, line)) {
         std::string cleaned;
+        int x = 0;
 
         for (char c : line) {
             if (c != ' ') {
                 cleaned += c;
+
+                if (c == 'B') {
+                    Rectangle solid = { x * tile_size, y * tile_size, tile_size, tile_size };
+                    bushes.push_back(solid);
+                }
+                ++x;
             }
         }
+
         if (!cleaned.empty()) {
             map_data.push_back(cleaned);
+            ++y;
         }
     }
-}
 
-void Map::unload_map() {
-	map_data.clear();
+    this->bushes = bushes;
+
+    // load audio
+    hurt = LoadSound("audio/FX/hurt.wav");
+
+    // load textures
+    dirt = LoadTexture("sprites/dirt.png");
+    path = LoadTexture("sprites/path.png");
+    dirt_stones = LoadTexture("sprites/dirt_stones.png");
+    dirt_grass = LoadTexture("sprites/dirt_grass.png");
+    bush_spritesheet = LoadTexture("sprites/bush_spritesheet.png");
 }
 
 void Map::update(float delta_time) {
@@ -78,32 +106,31 @@ void Map::draw(float tile_size, int tiles) {
     }
 }
 
-void Map::load_audio() {
-    InitAudioDevice();
-    SetMasterVolume(1.0f);
-
-    hurt = LoadSound("audio/FX/hurt.wav");
+Sound Map::get_hurt() const {
+    return hurt;
 }
 
-void Map::unload_audio() {
-    CloseAudioDevice();
-
-    UnloadSound(hurt);
-}
-
-void Map::load_textures() {
-    dirt = LoadTexture("sprites/dirt.png");
-    path = LoadTexture("sprites/path.png");
-    dirt_stones = LoadTexture("sprites/dirt_stones.png");
-    dirt_grass = LoadTexture("sprites/dirt_grass.png");
-    bush_spritesheet = LoadTexture("sprites/bush_spritesheet.png");
-}
-
-void Map::unload_textures() {
-	UnloadTexture(dirt);
-	UnloadTexture(path);
+bool Map::check_collision(Rectangle player_rectangle) {
+    for (const Rectangle& bush : bushes) {
+        if (CheckCollisionRecs(player_rectangle, bush)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 Map::~Map() {
+    // unload map
+    map_data.clear();
 
+    // unload audio
+    UnloadSound(hurt);
+    CloseAudioDevice();
+
+    // unload textures
+    UnloadTexture(dirt);
+    UnloadTexture(path);
+    UnloadTexture(dirt_stones);
+    UnloadTexture(dirt_grass);
+    UnloadTexture(bush_spritesheet);
 }
