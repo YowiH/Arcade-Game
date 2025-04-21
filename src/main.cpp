@@ -30,6 +30,7 @@ Vector2 player_mov_dir{0, 0};
 float player_Speed = 2;
 int Mov_dir;
 int player_walk_anim_counter = 0;
+int player_death_anim = 0;
 bool player_right_foot;
 bool player_dying;
 int lives = 3;
@@ -545,7 +546,7 @@ void powerUpUpdate() {
 
 void playerDeath() {
 	player_dying = true;
-	player_walk_anim_counter = 0;
+	player_death_anim = 0;
 	PlaySound(player_death);
 	//borrar enemics
 	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
@@ -825,6 +826,10 @@ void animationManager() {
 		player_walk_anim_counter = 0;
 	}
 
+	if (player_dying) {
+		player_death_anim++;
+	}
+
 	//ENEMIES
 	for (int i = 0; i < enemy_tracker.size(); i++) {
 		enemy_tracker[i].anim_counter++;
@@ -1013,26 +1018,28 @@ void DrawPlayer() {
 void DrawPlayerDeath() {
 	//player_walk_anim_counter++;
 	//actualitzar animacions
-	if (player_walk_anim_counter < 10) {
+	if (player_death_anim < 10) {
 		src = { 0, 0, 16, 16 };
 	}
-	else if (player_walk_anim_counter < 10 * 2) {
+	else if (player_death_anim < 10 * 2) {
 		src = { 16 * 1, 0, 16, 16 };
 	}
-	else if (player_walk_anim_counter < 10 * 3) {
+	else if (player_death_anim < 10 * 3) {
 		src = { 16 * 2, 0, 16, 16 };
 	}
-	else if (player_walk_anim_counter < 10 * 4) {
+	else if (player_death_anim < 10 * 4) {
 		src = { 16 * 3, 0, 16, 16 };
 	}
-	else if (player_walk_anim_counter <= 10 * 10) {}
+	else if (player_death_anim <= 10 * 10) {}
 	else {
 		player_dying = false;
 		player_pos = { tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4) };
+		player_death_anim = 0;
 		player_walk_anim_counter = 0;
+		player_death_anim = 0;
 	}
 	//dibuixa si han passat menys de 40 frames 
-	if (player_walk_anim_counter < 10 * 4) {
+	if (player_death_anim < 10 * 4) {
 		//waits
 		DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
 	}
@@ -1067,6 +1074,12 @@ void DrawMap(){
 				break;
 			case 'B':
 				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size}, {0,0}, 0, WHITE);
+				break;
+			case 'V':
+				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
+				if (!obstacles_positioned) {
+					positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+				}
 				break;
 			case 'O':
 				DrawTextureEx(logs, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
