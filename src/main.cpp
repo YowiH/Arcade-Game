@@ -16,12 +16,22 @@ bool bush_frame = 0;
 //Rectangle bush_rec = { 0.0f, 0.0f, ()};
 
 //CENTRAL VARAIBLES
+bool game_started = false;
 const float tile_size = 32;
 const float area_size = tile_size * 16;
 const int NUMBER_OF_TILES = 256;
 int randVal; //used to get random values;
 float level_length = 60 * 10; //all the frames in 2 minutes: 60 * 60 * 2
 float frames_since_level_start = 0;
+
+//title screen variables
+static float zoom = 0.01f * (tile_size / 16);
+static bool zoom_completed = false;
+static float zoom_speed = 0.005f * (tile_size / 16);
+
+//game over screen variables
+//int selected_option = 0;
+bool close_game;
 
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
@@ -142,6 +152,8 @@ std::vector<Map> map_list{};
 //TEXTURES
 //Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
 
+Texture2D title_screen;
+
 //player character
 Texture2D player_character_spritesheet;
 Texture2D player_character_death;
@@ -260,6 +272,7 @@ void LoadAssets() {
 	//UI
 	timer = LoadTexture("clock.png");
 	power_up_slot = LoadTexture("power_up_slot.png");
+	title_screen = LoadTexture("title_screen.png");
 
 	//SOUND
 	shoot_fx = LoadSound("shoot1.mp3");
@@ -309,13 +322,57 @@ void UnloadGame() {
 
 void InitGame() {
 	SetTargetFPS(60);
+	game_started = false;
+	zoom_completed = false;
 	map_list = { Map("AREAS/area1_1.txt"), Map("AREAS/area1_2.txt"), Map("AREAS/area1_3.txt") };
 	active_map = map_list[level_count];
 	level_count++;
+	lives = 3;
+	player_pos = {tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
 	InitAudioDevice();
 	LoadAssets();
 	//start playing music
 	PlayMusicStream(main_theme);
+}
+
+void RestartGame() {
+	InitGame();
+}
+
+void UpdateStartScreen() {
+	/*static float zoom = 0.01f * (tile_size / 16);
+	static bool zoom_completed = false;
+	static float zoomSpeed = 0.005f * (tile_size / 16);*/
+
+	if (!zoom_completed) {
+		if (zoom < 1.0f * (tile_size / 16)) {
+			zoom += zoom_speed;
+		}
+		else {
+			zoom_completed = true;
+		}
+	}
+	if (IsKeyDown(KEY_SPACE)) {
+		game_started = true;
+	}
+
+	EndDrawing();
+
+}
+
+void UpdateDeathScreen() {
+	if (IsKeyPressed(KEY_ENTER)) {
+		close_game = true;
+	}
+	/*if (IsKeyPressed(KEY_DOWN)) selected_option = 1;
+	if (IsKeyPressed(KEY_UP)) selected_option = 0;
+	if (IsKeyPressed(KEY_ENTER)) {
+		if (selected_option == 0) RestartGame();
+		else {
+			close_game = true;
+		}
+	}*/
+
 }
 
 void PlayerMovement() {
@@ -841,16 +898,16 @@ void animationManager() {
 }
 
 void changeLevel() {
-	if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {
+	if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
 		frames_since_level_start = 0;
 		//delete all obstacles
 		obsticle_tracker.clear();
 		obstacles_positioned = false;
-		if (level_count < map_list.size()) {
+		if (level_count < map_list.size()) {//adds one to the index of the map vector
 			active_map = map_list[level_count];
 			level_count++;
 		}
-		else {
+		else {//repeats to the first level if player is on the last
 			level_count = 0;
 			active_map = map_list[level_count];
 			level_count++;
@@ -860,53 +917,63 @@ void changeLevel() {
 
 void UpdateGame() {//update variables and positions
 
-	//MUSIC
-	UpdateMusicStream(main_theme);
-	if (!player_dying) {
-		//MOVEMENT
-		PlayerMovement();
-		//ENEMY MOVEMENT
-		enemyMovement();
+	if (game_started && lives >= 0) {
+		//MUSIC
+		UpdateMusicStream(main_theme);
+		if (!player_dying) {
+			//MOVEMENT
+			PlayerMovement();
+			//ENEMY MOVEMENT
+			enemyMovement();
 
-		//CREATE ENEMIES
-		if (frames_since_level_start < level_length) {
-			createEnemies();
-			//incrementar variable temps
-			frames_since_level_start++;
+			//CREATE ENEMIES
+			if (frames_since_level_start < level_length) {
+				createEnemies();
+				//incrementar variable temps
+				frames_since_level_start++;
+			}
+			//SHOOTING BULLETS
+			bulletShooting();
+
+			//update bullets
+			bulletUpdate();
+
+			//update power ups
+			powerUpUpdate();
+
+			//COLLISIONS
+			//player-enemies
+			player_enemyColl();
+
+			//player-obstacles
+			player_obsticleColl();
+
+			//bullet-enemies
+			bullet_enemyColl();
+
+			//bullets-obstacles
+			bullet_obsticleColl();
+
+			//player power-up colisions
+			player_powerUpColl();
 		}
-		//SHOOTING BULLETS
-		bulletShooting();
 
-		//update bullets
-		bulletUpdate();
+		//update death animations
+		updateDeathAnimations();
 
-		//update power ups
-		powerUpUpdate();
+		//ANIMATIONS
+		animationManager();
 
-		//COLLISIONS
-		//player-enemies
-		player_enemyColl();
-
-		//player-obstacles
-		player_obsticleColl();
-
-		//bullet-enemies
-		bullet_enemyColl();
-
-		//bullets-obstacles
-		bullet_obsticleColl();
-
-		//player power-up colisions
-		player_powerUpColl();
+		changeLevel();
+	}
+	else if (!game_started) {//start of the game
+		UpdateStartScreen();
+	}
+	else {//death of the player
+		UpdateDeathScreen();
 	}
 
-	//update death animations
-	updateDeathAnimations();
-
-	//ANIMATIONS
-	animationManager();
-
-	changeLevel();
+	
 }
 
 
@@ -1185,37 +1252,72 @@ void drawPowerUps() {
 	}
 }
 
-void DrawGame() {//draws the game every frame
-	BeginDrawing();
-	//draw background
+
+void DrawStartScreen() {
 	ClearBackground(BLACK);
 
-	//draw map
-	DrawMap();
+	//DrawTextureEx(titleScreen, { (area_size/2) - ((tile_size) * 6), (area_size / 2) - ((tile_size) * 5) }, 0, zoom, WHITE);
 
-	//draw enmie death animation
-	DrawDeathAnimations();
+	//DrawTextureEx(title_screen, { ((area_size + (tile_size * 3)) / 2) - ((tile_size) * 3), ((area_size + tile_size) / 2) - ((tile_size) * 3) }, 0, tile_size/16, BLACK);
 
-	//draw UI
-	DrawUI();
+	DrawTexturePro(title_screen,
+		{ 0,0,(16 * 6), (16 * 5) },
+		{ area_size / 2 - ((tile_size) * 6 * zoom) / 2, area_size / 2 - ((tile_size) * 5 * zoom) / 2, (tile_size * 6 * zoom), (tile_size * 5 * zoom) },
+		{ 0, 0},
+		0, WHITE);
+}
+void DrawGameOverScreen() {
+	ClearBackground(BLACK);
+	if (!close_game) {
+		DrawText("Game Over", area_size / 2 - 80, area_size / 2 - 40, 40, WHITE);
 
-	//draw player
-	if (!player_dying) {
-		DrawPlayer();
+		DrawText("Quit", area_size / 2 - 80, area_size / 2 + 80, 20, RED);
+
+		//DrawText("Restart", area_size / 2 - 80, area_size / 2 + 40, 20, (selected_option == 0) ? RED : WHITE);
+		//DrawText("Quit", area_size / 2 - 80, area_size / 2 + 80, 20, (selected_option == 1) ? RED : WHITE);
+		//Vector2 arrowPos = { area_size / 2 - 70, area_size / 2 + 40 + (selected_option * 40) };
+		//DrawTriangleLines(arrowPos, { arrowPos.x + 10, arrowPos.y - 5 }, { arrowPos.x + 10, arrowPos.y + 5 }, WHITE);
+	}
+}
+void DrawGame() {//draws the game every frame
+	BeginDrawing();
+	if (game_started && lives >= 0) {
+		//draw background
+		ClearBackground(BLACK);
+
+		//draw map
+		DrawMap();
+
+		//draw enmie death animation
+		DrawDeathAnimations();
+
+		//draw UI
+		DrawUI();
+
+		//draw player
+		if (!player_dying) {
+			DrawPlayer();
+		}
+		else {
+			DrawPlayerDeath();
+		}
+
+		//draw enemies
+		DrawEnemies();
+
+		//draw power ups
+		drawPowerUps();
+
+		//draw bullets
+		DrawBullets();
+
+	}
+	else if (!game_started) {
+		DrawStartScreen();
 	}
 	else {
-		DrawPlayerDeath();
+		DrawGameOverScreen();
 	}
-
-	//draw enemies
-	DrawEnemies();
-
-	//draw power ups
-	drawPowerUps();
-
-	//draw bullets
-	DrawBullets();
-
 	EndDrawing();
 }
 
@@ -1223,15 +1325,9 @@ void DrawGame() {//draws the game every frame
 void UpdateDrawFrame() {
 	UpdateGame();
 	DrawGame();
-	/*
-	while (!WindowShouldClose) {
-		UpdateGame();
-		DrawGame();
-	}
-	UnloadGame();
-	*/
-	//CloseWindow();
 }
+
+
 
 int main()
 {
@@ -1249,9 +1345,11 @@ int main()
 	InitGame();
 
 
-	while (!WindowShouldClose()) {
+	while (!close_game) {
 		UpdateDrawFrame();
 	}
+	UnloadGame();
+	CloseWindow();
 	return 0;
 	/*
 	// cleanup
