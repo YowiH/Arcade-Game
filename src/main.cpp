@@ -30,7 +30,7 @@ bool close_game;
 
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
-Vector2 player_pos{ tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
+Vector2 player_pos{ tile_size * 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
 Vector2 player_mov_dir{0, 0};
 float player_Speed = 2;
 int Mov_dir;
