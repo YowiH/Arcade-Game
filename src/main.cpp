@@ -355,8 +355,6 @@ void UpdateStartScreen() {
 		game_started = true;
 	}
 
-	EndDrawing();
-
 }
 
 void UpdateDeathScreen() {
