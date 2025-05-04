@@ -26,10 +26,9 @@ int randVal; //used to get random values;
 float level_length = 60 * 10; //all the frames in 2 minutes: 60 * 60 * 2
 float frames_since_level_start = 0;
 
-//title screen variables
-static float zoom = 0.01f * (tile_size / 16);
-static bool zoom_completed = false;
-static float zoom_speed = 0.005f * (tile_size / 16);
+ static float zoom = 0.01f * (tile_size / 16);
+ static bool zoom_completed = false;
+ static float zoom_speed = 0.005f * (tile_size / 16);
 
 //game over screen variables
 //int selected_option = 0;
@@ -712,7 +711,7 @@ void restrainPlayerMovement(float x, float y) {
 		yNegBlock = true;
 	}
 	else if (theta >= 3 * PI / 4 && theta < 5 * PI / 4) {
-		//colisió per l'esquerra
+		//colisiÃ³ per l'esquerra
 		xNegBlock = true;
 	}
 	else if (theta >= 5 * PI / 4 && theta < 7 * PI / 4) {
@@ -899,7 +898,7 @@ void animationManager() {
 	}
 
 	//PLAYER
-	if (Mov_dir != 0){ //si el player s'està movent
+	if (Mov_dir != 0){ //si el player s'estÃ  movent
 		player_walk_anim_counter++;
 		if (player_walk_anim_counter % 6 == 0) {
 			player_right_foot = !player_right_foot;
@@ -1085,7 +1084,7 @@ void DrawPlayer() {
 		}
 	}
 	else {//no esta disparant
-		switch (Mov_dir) {//s'està movent
+		switch (Mov_dir) {//s'estÃ  movent
 		case 1: //dreta
 			if(player_right_foot){
 				src = { 16 * 6, 0, 16, 16 };
