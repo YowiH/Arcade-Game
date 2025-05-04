@@ -19,6 +19,8 @@ bool bush_frame = 0;
 bool game_started = false;
 const float tile_size = 32;
 const float area_size = tile_size * 16;
+const float left_margin = tile_size * 3;
+const float top_margin = tile_size;
 const int NUMBER_OF_TILES = 256;
 int randVal; //used to get random values;
 float level_length = 60 * 10; //all the frames in 2 minutes: 60 * 60 * 2
@@ -35,7 +37,7 @@ bool close_game;
 
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
-Vector2 player_pos{ tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
+Vector2 player_pos{ tile_size * 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
 Vector2 player_mov_dir{0, 0};
 float player_Speed = 2;
 int Mov_dir;
@@ -60,6 +62,12 @@ Map active_map;
 int level_count = 0;
 int powerUp_lifespan = 600;
 bool obstacles_positioned = false;
+
+enum stage {
+	DESERT,
+	FOREST
+};
+stage actual_stage;
 
 //ENEMY SPAWNING VARIABLES
 int active_enemies, max_active_enemies = 5;
@@ -200,7 +208,7 @@ Texture2D dirt;
 Texture2D dirt_stones;
 Texture2D path;
 Texture2D path_stones;
-Texture2D river_desert;
+Texture2D river_desert1, river_desert2;
 Texture2D bush_spritesheet;
 Texture2D logs;
 
@@ -245,15 +253,29 @@ Music main_theme;
 //DATA MANAGEMENT
 
 void LoadAssets() {
+
+	map_list = { Map("AREAS/area1_1.txt", 'D'), Map("AREAS/area1_2.txt", 'D'), Map("AREAS/area1_3.txt", 'D'), Map("AREAS/area1_4.txt", 'D'), Map("AREAS/area2_1.txt", 'F'), Map("AREAS/area2_2.txt" , 'F'), Map("AREAS/area2_3.txt" , 'F')};
 	// MAP TEXTURES
+	//dessert
 	dirt_grass = LoadTexture("dirt_grass.png");
 	dirt = LoadTexture("dirt.png");
 	dirt_stones = LoadTexture("dirt_stones.png");
 	bush_spritesheet = LoadTexture("bush_spritesheet.png");
 	path = LoadTexture("path.png");
+	path_stones = LoadTexture("path_stones.png");
 	bridge = LoadTexture("bridge.png");
 	bullet_player = LoadTexture("bullet.png");
 	logs = LoadTexture("logs.png");
+	river_desert1 = LoadTexture("river_desert1.png");
+	river_desert2 = LoadTexture("river_desert2.png");
+
+	//forest
+	grass = LoadTexture("grass.png");
+	flowers_grass = LoadTexture("flowers_grass.png");
+	green_bush_spritesheet = LoadTexture("green_bush_spritesheet.png");
+	path_grass = LoadTexture("path_grass.png");
+	tall_grass = LoadTexture("tall_grass.png");
+	stump = LoadTexture("stump.png");
 
 	//CHARACTERS
 	player_character_spritesheet = LoadTexture("player_character_spritesheet.png");
@@ -288,11 +310,19 @@ void LoadAssets() {
 
 void UnloadGame() {
 	//textures
+	//dessert
 	UnloadTexture(dirt_grass);
 	UnloadTexture(dirt);
 	UnloadTexture(bush_spritesheet);
 	UnloadTexture(path);
 	UnloadTexture(logs);
+
+	//forest
+	UnloadTexture(grass);
+	UnloadTexture(flowers_grass);
+	UnloadTexture(path_grass);
+	UnloadTexture(green_bush_spritesheet);
+	UnloadTexture(tall_grass);
 
 	//characters
 	UnloadTexture(player_character_spritesheet);
@@ -324,13 +354,13 @@ void InitGame() {
 	SetTargetFPS(60);
 	game_started = false;
 	zoom_completed = false;
-	map_list = { Map("AREAS/area1_1.txt"), Map("AREAS/area1_2.txt"), Map("AREAS/area1_3.txt") };
-	active_map = map_list[level_count];
-	level_count++;
 	lives = 3;
-	player_pos = {tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
+	player_pos = {tile_size * 3 + (area_size / 2), tile_size + (area_size * 3 / 4)};
+	actual_stage = DESERT;
 	InitAudioDevice();
 	LoadAssets();
+	active_map = map_list[level_count];
+	level_count++;
 	//start playing music
 	PlayMusicStream(main_theme);
 }
@@ -355,8 +385,6 @@ void UpdateStartScreen() {
 	if (IsKeyDown(KEY_SPACE)) {
 		game_started = true;
 	}
-
-	EndDrawing();
 
 }
 
@@ -912,9 +940,17 @@ void changeLevel() {
 			active_map = map_list[level_count];
 			level_count++;
 		}
+		switch (active_map.getS()) {
+		case 'D':
+			actual_stage = DESERT;
+			break;
+		case 'F':
+			actual_stage = FOREST;
+			break;
+		}
 	}
 }
-
+//UPDATE GAME
 void UpdateGame() {//update variables and positions
 
 	if (game_started && lives >= 0) {
@@ -1111,7 +1147,7 @@ void DrawPlayerDeath() {
 	else if (player_death_anim <= 10 * 10) {}
 	else {
 		player_dying = false;
-		player_pos = { tile_size + 3 + (area_size / 2), tile_size + (area_size * 3 / 4) };
+		player_pos = { tile_size * 3 + (area_size / 2), tile_size + (area_size * 3 / 4) };
 		player_death_anim = 0;
 		player_walk_anim_counter = 0;
 		player_death_anim = 0;
@@ -1124,53 +1160,111 @@ void DrawPlayerDeath() {
 	//DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
 }
 void DrawMap(){
-	//DrawTextureEx(dirt_grass, { tile_size * 12, tile_size * 12 }, 0, tile_size / 16, WHITE);
-	//const char* text[NUMBER_OF_TILES];
 	int k = 0;
-	//string M{ LoadFileText("AREAS/area1_1.txt") };
-	//Rectangle src;
+
 	if (bush_frame == 0) {
-		src = { 0.0f, 0.0f, 16.0f, 16.0f }; //tile_size , tile_size
+		src = { 0.0f, 0.0f, 16.0f, 16.0f };
 	}
 	else {
-		src = { 17.0f, 0.0f, 16.0f, 16.0f }; //tile_size , tile_size
+		src = { 17.0f, 0.0f, 16.0f, 16.0f };
 	}
-	for (int i = 0; i < 16; i++) {
-		for (int j = 0; j < 16; j++) {
-			switch (active_map.getStr()[k]) {
-			case 'D':
-				DrawTextureEx(dirt, { tile_size * j + (tile_size * 3), tile_size * i + tile_size}, 0, tile_size / 16, WHITE);
-				break;
-			case 'M':
-				DrawTextureEx(dirt_grass, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-				break;
-			case 'S':
-				DrawTextureEx(dirt_stones, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-				break;
-			case 'P':
-				DrawTextureEx(path, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-				break;
-			case 'B':
-				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size}, {0,0}, 0, WHITE);
-				break;
-			case 'V':
-				DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
-				if (!obstacles_positioned) {
-					positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+	switch (actual_stage) {
+	case DESERT:
+		for (int i = 0; i < 16; i++) {
+			for (int j = 0; j < 16; j++) {
+				switch (active_map.getStr()[k]) {
+				case 'D':
+					DrawTextureEx(dirt, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'M':
+					DrawTextureEx(dirt_grass, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'S':
+					DrawTextureEx(dirt_stones, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'N':
+					DrawTextureEx(path_stones, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'P':
+					DrawTextureEx(path, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'B':
+					DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
+					break;
+				case 'V':
+					DrawTexturePro(bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
+					if (!obstacles_positioned) {
+						positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+					}
+					break;
+				case 'O':
+					DrawTextureEx(logs, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					if (!obstacles_positioned) {
+						positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+					}
+					break;
+				case 'R':
+					DrawTextureEx(river_desert1, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					if (!obstacles_positioned) {
+						positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+					}
+					break;
+				case 'T':
+					DrawTextureEx(river_desert2, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					if (!obstacles_positioned) {
+						positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+					}
+					break;
+				case 'I':
+					DrawTextureEx(bridge, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				default:
+					break;
 				}
-				break;
-			case 'O':
-				DrawTextureEx(logs, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-				if (!obstacles_positioned) {
-					positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
-				}
-				break;
-			default:
-				break;
+				k++;
 			}
-			k++;
 		}
+		break;
+	case FOREST:
+		for (int i = 0; i < 16; i++) {
+			for (int j = 0; j < 16; j++) {
+				switch (active_map.getStr()[k]) {
+				case 'D':
+					DrawTextureEx(grass, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'M':
+					DrawTextureEx(flowers_grass, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'S':
+					DrawTextureEx(tall_grass, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'P':
+					DrawTextureEx(path_grass, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					break;
+				case 'B':
+					DrawTexturePro(green_bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
+					break;
+				case 'V':
+					DrawTexturePro(green_bush_spritesheet, src, { tile_size * j + (tile_size * 3), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
+					if (!obstacles_positioned) {
+						positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+					}
+					break;
+				case 'O':
+					DrawTextureEx(stump, { tile_size * j + (tile_size * 3), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
+					if (!obstacles_positioned) {
+						positionObsticle(tile_size * j + (tile_size * 3), tile_size * i + tile_size);
+					}
+					break;
+				default:
+					break;
+				}
+				k++;
+			}
+		}
+		break;
 	}
+	
 	obstacles_positioned = true;
 }
 void DrawUI() {

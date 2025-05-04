@@ -5,8 +5,10 @@
 class Map {
 private:
 	std::string M;
+	char S;
 public:
-	Map(const char* F);
+	Map(const char* F, char C);
 	std :: string getStr();
+	char getS();
 	Map() = default;
 };
