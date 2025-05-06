@@ -69,7 +69,7 @@ enum stage {
 stage actual_stage;
 
 //ENEMY SPAWNING VARIABLES
-int active_enemies, max_active_enemies = 5;
+int active_enemies, max_active_enemies = 1;
 int enemy_creation_delay = 30, frames_since_enemy_spawn = 0;
 
 
@@ -109,6 +109,8 @@ struct enemy {
 	int hp;
 	int anim_counter = 0;
 	bool right_foot;
+	Vector2 tile;
+	Vector2 target;
 };
 
 struct powerUp {
@@ -133,6 +135,11 @@ struct death_anim {
 	int frameCounter = 0;
 };
 
+struct Tile {
+	int posX, posY;
+	bool occupied = false;
+};
+
 //bullet vectors
 std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
@@ -154,7 +161,13 @@ std::vector<powerUp> powerUp_pool{};
 std::vector<death_anim> deathAnim_tracker{};
 std::vector<death_anim> deathAnim_pool{};
 
+//map vector
 std::vector<Map> map_list{};
+
+//tiles vector (2D)
+std::vector<vector<Tile>> quadricula{};
+//vector<vector<int>> v = {{1, 2}, {3, 4}};
+
 
 //TEXTURES
 //Create gloval varaibles for all textures so they can be used by the draw function and the load assets function
@@ -356,15 +369,29 @@ void UnloadGame() {
 	CloseAudioDevice;
 }
 
+void initializeGrid() {
+	for (int i = 0; i < 16; i++) {
+		std::vector<Tile> row;
+		quadricula.push_back(row);
+		for (int j = 0; j < 16; j++) {
+			Tile tile;
+			tile.posX = j;
+			tile.posY = i;
+			quadricula[i].push_back(tile);
+
+		}
+	}
+}
+
 //INITAILIZE GAME
 
 void InitGame() {
 	SetTargetFPS(60);
 	game_started = false;
 	zoom_completed = false;
+	initializeGrid();
 	lives = 3;
 	player_pos = { left_margin + (area_size / 2), tile_size + (area_size * 3 / 4)};
-	actual_stage = DESERT;
 	InitAudioDevice();
 	LoadAssets();
 	active_map = map_list[level_count];
@@ -938,11 +965,20 @@ void animationManager() {
 	}
 }
 
+void clearTiles() { //reset the state of the tiles to create new obstacles next area
+	for (int i = 0; i < 16; i++) {
+		for (int j = 0; j < 16; j++) {
+			quadricula[i][j].occupied = false;
+		}
+	}
+}
+
 void changeLevel() {
 	if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
 		frames_since_level_start = 0;
 		//delete all obstacles
 		obsticle_tracker.clear();
+		clearTiles();
 		obstacles_positioned = false;
 		if (level_count < map_list.size()) {//adds one to the index of the map vector
 			active_map = map_list[level_count];
@@ -1032,7 +1068,10 @@ void positionObsticle(float posX, float posY) {
 		obs.rec = {posX, posY, tile_size, tile_size};
 		obsticle_tracker.push_back(obs);
 	}
-	//afegir codi de bullet pool
+	//add code for the onstacle pool
+	
+	//occipie all the positions with obstacles
+	quadricula[posY][posX].occupied = true;
 }
 
 //DRAW
