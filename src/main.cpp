@@ -133,6 +133,8 @@ struct death_anim {
 	int frameCounter = 0;
 };
 
+
+
 //bullet vectors
 std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
@@ -195,7 +197,7 @@ Texture2D flyer_death_animation;
 Texture2D ammunition;
 Texture2D guns;
 Texture2D boots;
-Texture2D shop_jeeper_spritesheet;
+Texture2D shop_keeper_spritesheet;
 Texture2D shop_blanket;
 
 //general terrain
@@ -293,6 +295,9 @@ void LoadAssets() {
 	coin = LoadTexture("coin.png");
 	extra_life = LoadTexture("extra_life.png");
 
+	//SHOP
+	shop_keeper_spritesheet = LoadTexture("shop_keeper_spritesheet.png");
+
 	//UI
 	timer = LoadTexture("clock.png");
 	power_up_slot = LoadTexture("power_up_slot.png");
@@ -344,6 +349,9 @@ void UnloadGame() {
 	//power ups
 	UnloadTexture(coin);
 	UnloadTexture(extra_life);
+
+	//shop
+	UnloadTexture(shop_keeper_spritesheet);
 
 	//sounds
 	UnloadSound(shoot_fx);
@@ -963,6 +971,19 @@ void changeLevel() {
 		}
 	}
 }
+
+//SHOP
+void DrawShopKeeper() {
+	if (animation_frame_counter % 120 == 0) {
+		src = { 0, 0, 16, 16 };
+	}
+	else {
+		src = { 16 * 1, 0, 16, 16 };
+	}
+	DrawTexturePro(shop_keeper_spritesheet, src, { tile_size * 10, tile_size, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
+
+}
+
 //UPDATE GAME
 void UpdateGame() {//update variables and positions
 
@@ -1005,6 +1026,11 @@ void UpdateGame() {//update variables and positions
 
 			//player power-up colisions
 			player_powerUpColl();
+
+			if()
+
+			changeLevel();
+
 		}
 
 		//update death animations
@@ -1013,7 +1039,6 @@ void UpdateGame() {//update variables and positions
 		//ANIMATIONS
 		animationManager();
 
-		changeLevel();
 	}
 	else if (!game_started) {//start of the game
 		UpdateStartScreen();
