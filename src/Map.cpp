@@ -1,11 +1,5 @@
 #include "map.h"
 
-Map::Map() {
-	powerUp_lifespan = 600;
-	obstacles_positioned = false;
-	bush_frame = false;
-}
-
 Map::Map(const char* F, char C) {
 	M = LoadFileText(F);
 	S = C;
@@ -32,7 +26,26 @@ std::vector<Obstacle> Map::get_obstacle_pool() const {
 	return obstacle_pool;
 }
 
-void Map::changeLevel(float& frames_since_level_start, float& level_length, int& active_enemies, std::vector<Map>& map_list, int& level_index) {
+
+stage Map::get_actual_stage() const {
+	return actual_stage;
+}
+
+void Map::set_stage(stage s) {
+	actual_stage = s;
+}
+
+void Map::changeLevel(float frames_since_level_start, float level_length, int active_enemies, std::vector<Map>& map_list, int& level_index) {
+
+	switch (getS()) {
+	case 'D':
+		set_stage(DESERT);
+		break;
+	case 'F':
+		set_stage(FOREST);
+		break;
+	}
+
 	if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
 		frames_since_level_start = 0;
 		//delete all obstacles
@@ -44,25 +57,9 @@ void Map::changeLevel(float& frames_since_level_start, float& level_length, int&
 		}
 
 		level_index++;
-
-		switch (getS()) {
-		case 'D':
-			actual_stage = DESERT;
-			break;
-		case 'F':
-			actual_stage = FOREST;
-			break;
-		}
 	}
 }
 
-stage Map::get_actual_stage() const {
-	return actual_stage;
-}
-
-void Map::set_stage(stage s) {
-	actual_stage = s;
-}
 
 void Map::positionObstacle(float posX, float posY, const float tile_size) {
 	if (obstacle_pool.empty()) {
@@ -97,9 +94,9 @@ void Map::load_assets() {
 	river_forest2 = LoadTexture("river_forest2.png");
 }
 
-void Map::DrawMap(Rectangle& src, const float tile_size, const float left_margin) {
+void Map::DrawMap(const float tile_size, const float left_margin) {
 	int k = 0;
-
+	Rectangle src;
 	if (bush_frame == false) {
 		src = { 0.0f, 0.0f, 16.0f, 16.0f };
 	}

@@ -17,7 +17,6 @@ private:
 
 	bool bush_frame;
 
-	int level_count;
 	int powerUp_lifespan;
 	bool obstacles_positioned;
 
@@ -49,24 +48,21 @@ private:
 	std::vector<Obstacle> obstacle_tracker{};
 	std::vector<Obstacle> obstacle_pool{};
 public:
-	Map();
 	Map(const char* F, char C);
 
 	std::string getStr();
 	char getS();
-	int get_level_count() const;
 	int get_powerUp_lifespan() const;
 	stage get_actual_stage() const;
 	std::vector<Obstacle> get_obstacle_tracker() const;
 	std::vector<Obstacle> get_obstacle_pool() const;
 
-	void increase_level_count();
 	void change_bush_frame();
 	void set_stage(stage s);
-	void changeLevel(float& frames_since_level_start, float& level_length, int& active_enemies, std::vector<Map>& map_list, int& level_index);
+	void changeLevel(float frames_since_level_start, float level_length, int active_enemies, std::vector<Map>& map_list, int& level_index);
 	void positionObstacle(float posX, float posY, const float tile_size);
 
 	void load_assets();
 	void unload_assets();
-	void DrawMap(Rectangle& src, const float tile_size, const float left_margin);
+	void DrawMap(const float tile_size, const float left_margin);
 };
