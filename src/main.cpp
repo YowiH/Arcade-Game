@@ -563,6 +563,10 @@ void createEnemies() {
 
 		enemy baddie;
 		baddie.position = pos;
+		baddie.tilex = (int)pos.x;
+		baddie.tiley = (int)pos.y;
+		baddie.targetx = (int)pos.x;
+		baddie.targety = (int)pos.y;
 		baddie.hp = 1;
 		enemy_tracker.push_back(baddie);
 
@@ -575,8 +579,6 @@ void createEnemies() {
 }
 
 void assignNewTargetTile(enemy baddie) { //problema, fa una copia?
-
-	Tile t = quadricula[(int)baddie.tilex + 1][(int)baddie.tiley];
 	//the enemy will move to the next to it that is clossest to the player in a cross, will prefer to move in the axis in witch it is farthest to the player
 	Vector2 baddie_playerDist = { player_pos.x - baddie.tilex, player_pos.y - baddie.tiley };
 	if (abs(baddie_playerDist.x) > abs(baddie_playerDist.y)) { //es moura en l'eix x
@@ -626,22 +628,24 @@ void assignNewTargetTile(enemy baddie) { //problema, fa una copia?
 }
 
 void enemyMovement() {
-	float magnitude;
-	/*for (int i = 0; i < enemy_tracker.size(); i++) {
-		magnitude = sqrt((player_pos.x - enemy_tracker[i].position.x) * (player_pos.x - enemy_tracker[i].position.x) + (player_pos.y - enemy_tracker[i].position.y) * (player_pos.y - enemy_tracker[i].position.y));
-		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
-	}*/
 	
+	/*magnitude = sqrt(pow(player_pos.x - enemy_tracker[i].position.x, 2) + pow(player_pos.y - enemy_tracker[i].position.y, 2));
+		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };*/
+
+	float magnitude;
 	for (int i = 0; i < enemy_tracker.size(); i++) {
-		magnitude = sqrt(pow(player_pos.x - enemy_tracker[i].position.x, 2) + pow(player_pos.y - enemy_tracker[i].position.y, 2));
-		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
+
+		cout << enemy_tracker[i].targetx << " | " << enemy_tracker[i].targety << endl;
+
+		magnitude = sqrt(pow(enemy_tracker[i].targetx - enemy_tracker[i].position.x, 2) + pow(enemy_tracker[i].targety - enemy_tracker[i].position.y, 2));
+		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((enemy_tracker[i].targetx - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((enemy_tracker[i].targety - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
 
 		//comprova si ha arribat a la seva destinació per cada enemic
 		float origin_targetDist = sqrt(pow((int)(enemy_tracker[i].targetx - enemy_tracker[i].tilex), 2) + pow((int)(enemy_tracker[i].targety - enemy_tracker[i].tiley), 2));
 		float origin_enemyDist = sqrt(pow((int)(enemy_tracker[i].position.x - enemy_tracker[i].tilex), 2) + pow((int)(enemy_tracker[i].position.y - enemy_tracker[i].tiley), 2));
 
 		if (origin_targetDist - origin_enemyDist <= 0) {//if the distance between the origin and the enemy is grater than the one from origin to target it means it reached its destiny
-			enemy_tracker[i].position = {(float) enemy_tracker[i].targetx, (float) enemy_tracker[i].targety};
+			enemy_tracker[i].position = {(float) (enemy_tracker[i].targetx + left_margin), (float) (enemy_tracker[i].targety + top_margin)};
 			assignNewTargetTile(enemy_tracker[i]);//assigns new target tile to the enemy since it has reached its old one
 		}
 	}
