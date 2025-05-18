@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include "Map.h"
+#include<cmath>
 
 using namespace std;
 
@@ -109,8 +110,8 @@ struct enemy {
 	int hp;
 	int anim_counter = 0;
 	bool right_foot;
-	Vector2 tile;
-	Vector2 target;
+	int tilex, tiley;
+	int targetx, targety;
 };
 
 struct powerUp {
@@ -146,7 +147,7 @@ std::vector<bullet> bullet_pool{};
 
 //enemy vectors
 std::vector<enemy> enemy_tracker{};
-std::vector<enemy> enemy_pool{};
+//std::vector<enemy> enemy_pool{};
 
 //obstacle vector
 std::vector<Obsticle> obsticle_tracker{};
@@ -547,7 +548,7 @@ void createEnemies() {
 		defalult:
 			cout << "the random value has a wrong value" << endl;
 		}
-		if (enemy_pool.empty()) {
+		/*if (enemy_pool.empty()) {
 			enemy baddie;
 			baddie.position = pos;
 			baddie.hp = 1;
@@ -558,7 +559,13 @@ void createEnemies() {
 			enemy_tracker.back().hp = 1;
 			enemy_tracker.back().position = pos;
 			enemy_pool.pop_back();
-		}
+		}*/
+
+		enemy baddie;
+		baddie.position = pos;
+		baddie.hp = 1;
+		enemy_tracker.push_back(baddie);
+
 		active_enemies++;
 	
 	}
@@ -567,17 +574,78 @@ void createEnemies() {
 	}
 }
 
+void assignNewTargetTile(enemy baddie) { //problema, fa una copia?
+
+	Tile t = quadricula[(int)baddie.tilex + 1][(int)baddie.tiley];
+	//the enemy will move to the next to it that is clossest to the player in a cross, will prefer to move in the axis in witch it is farthest to the player
+	Vector2 baddie_playerDist = { player_pos.x - baddie.tilex, player_pos.y - baddie.tiley };
+	if (abs(baddie_playerDist.x) > abs(baddie_playerDist.y)) { //es moura en l'eix x
+		baddie.targetx = baddie.targetx + (baddie_playerDist.x / abs(baddie_playerDist.x));
+	}
+	else { //es moura en l'eix y
+		baddie.targety = baddie.targety + (baddie_playerDist.y / abs(baddie_playerDist.y));
+	}
+	//es podria fer amb un while?
+	if (quadricula[baddie.targetx][baddie.targety].occupied = true)//problema, es correcte el posicionament de x i y?
+	{
+		if (baddie.targetx != baddie.tilex) //es volia moure en x -> es moura en y
+		{
+			baddie.targety = baddie.targety + (baddie_playerDist.y / abs(baddie_playerDist.y));
+		}
+		else {//es volia moure en y
+			baddie.targetx = baddie.targetx + (baddie_playerDist.x / abs(baddie_playerDist.x));
+		}
+		//comprova si la casella esta ocupada
+		if (quadricula[baddie.targetx][baddie.targety].occupied = true)//problema, es correcte el posicionament de x i y?
+		{
+			if (baddie.targetx != baddie.tilex) //es volia moure en x -> es moura en y
+			{
+				baddie.targety = baddie.targety - (baddie_playerDist.y / abs(baddie_playerDist.y));
+			}
+			else {//es volia moure en y
+				baddie.targetx = baddie.targetx - (baddie_playerDist.x / abs(baddie_playerDist.x));
+			}
+
+			if (quadricula[baddie.targetx][baddie.targety].occupied = true)//problema, es correcte el posicionament de x i y?
+			{
+				if (baddie.targetx != baddie.tilex) //es volia moure en x -> es moura en y
+				{
+					baddie.targety = baddie.targety + (baddie_playerDist.y / abs(baddie_playerDist.y));
+				}
+				else {//es volia moure en y
+					baddie.targetx = baddie.targetx + (baddie_playerDist.x / abs(baddie_playerDist.x));
+				}
+				if (quadricula[baddie.targetx][baddie.targety].occupied = true) {
+					baddie.targetx = baddie.position.x;
+					baddie.targety = baddie.position.y;
+				}
+			}
+		}
+	}
+
+}
+
 void enemyMovement() {
-	//delete this trial code
 	float magnitude;
-	for (int i = 0; i < enemy_tracker.size(); i++) {
+	/*for (int i = 0; i < enemy_tracker.size(); i++) {
 		magnitude = sqrt((player_pos.x - enemy_tracker[i].position.x) * (player_pos.x - enemy_tracker[i].position.x) + (player_pos.y - enemy_tracker[i].position.y) * (player_pos.y - enemy_tracker[i].position.y));
 		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
-	}
-	//magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
-	/*if (tri.alive) {
-		tri.position = { tri.position.x + ((player_pos.x - tri.position.x) / magnitude) * 2, tri.position.y + ((player_pos.y - tri.position.y) / magnitude) * 2 };
 	}*/
+	
+	for (int i = 0; i < enemy_tracker.size(); i++) {
+		magnitude = sqrt(pow(player_pos.x - enemy_tracker[i].position.x, 2) + pow(player_pos.y - enemy_tracker[i].position.y, 2));
+		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
+
+		//comprova si ha arribat a la seva destinació per cada enemic
+		float origin_targetDist = sqrt(pow((int)(enemy_tracker[i].targetx - enemy_tracker[i].tilex), 2) + pow((int)(enemy_tracker[i].targety - enemy_tracker[i].tiley), 2));
+		float origin_enemyDist = sqrt(pow((int)(enemy_tracker[i].position.x - enemy_tracker[i].tilex), 2) + pow((int)(enemy_tracker[i].position.y - enemy_tracker[i].tiley), 2));
+
+		if (origin_targetDist - origin_enemyDist <= 0) {//if the distance between the origin and the enemy is grater than the one from origin to target it means it reached its destiny
+			enemy_tracker[i].position = {(float) enemy_tracker[i].targetx, (float) enemy_tracker[i].targety};
+			assignNewTargetTile(enemy_tracker[i]);//assigns new target tile to the enemy since it has reached its old one
+		}
+	}
+
 }
 
 //BULLETS MANAGER
@@ -676,7 +744,7 @@ void playerDeath() {
 	//borrar enemics
 	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
 		//save the bullet in the pool
-		enemy_pool.push_back(enemy_tracker[i]);
+		//enemy_pool.push_back(enemy_tracker[i]);
 		//borrar bullet
 		auto& j = enemy_tracker.begin() + i;
 		enemy_tracker.erase(j);
@@ -851,7 +919,7 @@ void bullet_enemyColl() { //bug here?
 					if (enemy_tracker[i].hp <= 0) {
 
 						//save the enemy in the pool
-						enemy_pool.push_back(enemy_tracker[i]);
+						//enemy_pool.push_back(enemy_tracker[i]);
 
 						//mirar si es crea un power up
 						spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
