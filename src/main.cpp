@@ -563,10 +563,10 @@ void createEnemies() {
 
 		enemy baddie;
 		baddie.position = pos;
-		baddie.tilex = (int)pos.x;
-		baddie.tiley = (int)pos.y;
-		baddie.targetx = (int)pos.x;
-		baddie.targety = (int)pos.y;
+		baddie.tilex = ((int)pos.x - left_margin)/ tile_size;
+		baddie.tiley = ((int)pos.y - top_margin) / tile_size;
+		baddie.targetx = ((int)pos.x - left_margin) / tile_size;
+		baddie.targety = ((int)pos.y - top_margin) / tile_size;
 		baddie.hp = 1;
 		enemy_tracker.push_back(baddie);
 
@@ -587,6 +587,7 @@ void assignNewTargetTile(enemy baddie) { //problema, fa una copia?
 	else { //es moura en l'eix y
 		baddie.targety = baddie.targety + (baddie_playerDist.y / abs(baddie_playerDist.y));
 	}
+	cout << baddie.targetx << " | " << baddie.targety << endl;
 	//es podria fer amb un while?
 	if (quadricula[baddie.targetx][baddie.targety].occupied = true)//problema, es correcte el posicionament de x i y?
 	{
