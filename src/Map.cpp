@@ -11,12 +11,6 @@ std::string Map::getStr()
 char Map::getS() {
 	return S;
 }
-void Map::positionObstacle(float x, float y, const float tile_size, std::vector<Obstacle>& obstacle_pool, std::vector<Obstacle>& obstacle_tracker) {
-    if (obstacle_pool.empty()) {
-        Obstacle obs(x, y, tile_size);
-        obstacle_tracker.push_back(obs);
-    }
-}
 void Map::draw(const float tile_size, const float left_margin, bool bush_frame, bool& obstacles_positioned, std::vector<Obstacle>& obstacle_pool, std::vector<Obstacle>& obstacle_tracker, const std::vector<Texture2D>& desert_textures, const std::vector<Texture2D>& forest_textures) {
     Rectangle src;
     if (bush_frame == 0) {
@@ -59,26 +53,30 @@ void Map::draw(const float tile_size, const float left_margin, bool bush_frame, 
                     DrawTexturePro(textures[5], src, { pos.x, pos.y, tile_size, tile_size }, { 0, 0 }, 0, WHITE); break;
                 case 'V': 
                     DrawTexturePro(textures[5], src, { pos.x, pos.y, tile_size, tile_size }, { 0, 0 }, 0, WHITE);
-                    if (!obstacles_positioned) {
-                        positionObstacle(pos.x, pos.y, tile_size, obstacle_pool, obstacle_tracker);
+                    if (!obstacles_positioned && obstacle_pool.empty()) {
+                        Obstacle obs(pos.x, pos.y, tile_size);
+                        obstacle_tracker.push_back(obs);
                     }
                     break;
                 case 'O': 
                     DrawTextureEx(textures[6], pos, 0, tile_size / 16, WHITE); 
-                    if (!obstacles_positioned) {
-                        positionObstacle(pos.x, pos.y, tile_size, obstacle_pool, obstacle_tracker);
+                    if (!obstacles_positioned && obstacle_pool.empty()) {
+                        Obstacle obs(pos.x, pos.y, tile_size);
+                        obstacle_tracker.push_back(obs);
                     }
                     break;
                 case 'R': 
                     DrawTextureEx(textures[7], pos, 0, tile_size / 16, WHITE); 
-                    if (!obstacles_positioned) {
-                        positionObstacle(pos.x, pos.y, tile_size, obstacle_pool, obstacle_tracker);
+                    if (!obstacles_positioned && obstacle_pool.empty()) {
+                        Obstacle obs(pos.x, pos.y, tile_size);
+                        obstacle_tracker.push_back(obs);
                     }
                     break;
                 case 'T': 
                     DrawTextureEx(textures[8], pos, 0, tile_size / 16, WHITE); 
-                    if (!obstacles_positioned) {
-                        positionObstacle(pos.x, pos.y, tile_size, obstacle_pool, obstacle_tracker);
+                    if (!obstacles_positioned && obstacle_pool.empty()) {
+                        Obstacle obs(pos.x, pos.y, tile_size);
+                        obstacle_tracker.push_back(obs);
                     }
                     break;
                 case 'I': 
