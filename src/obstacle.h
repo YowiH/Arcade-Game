@@ -4,5 +4,5 @@
 
 class Obstacle : public Entity {
 public:
-	Obstacle(float x, float y, const float tile_size);
+	Obstacle(float x, float y);
 };

@@ -1,10 +1,14 @@
-#include "raylib.h"
+#include <raylib.h>
 #include <vector>
-#include "resource_dir.h"
+#include <resource_dir.h>
 #include <iostream>
 #include <string>
+
 #include "map.h"
 #include "obstacle.h"
+#include "enemy.h"
+#include "player.h"
+#include "powerUp.h"
 
 using namespace std;
 
@@ -36,19 +40,7 @@ float frames_since_level_start = 0;
 bool close_game;
 
 //player varaibles
-Vector2 player_size{ tile_size, tile_size};
-Vector2 player_pos{ left_margin + (area_size / 2), tile_size + (area_size * 3 / 4)};
-Vector2 player_mov_dir{0, 0};
-float player_Speed = 2;
-int Mov_dir;
-int player_walk_anim_counter = 0;
-int player_death_anim = 0;
-bool player_right_foot;
-bool player_dying;
-int lives = 3;
-int coins = 0;
-int damage = 1;
-bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
+Player player;
 
 //shooting
 int fire_frame_counter = 0;
@@ -63,53 +55,10 @@ int powerUp_lifespan = 600;
 bool obstacles_positioned = false;
 
 //ENEMY SPAWNING VARIABLES
-int active_enemies, max_active_enemies = 5;
-int enemy_creation_delay = 30, frames_since_enemy_spawn = 0;
-
-
-//CLASS HIERARCHY
-class GameObject {
-private:
-public:
-	Vector2 position;
-	Vector2 direction;
-	int speed;
-};
-class player_character : GameObject {
-public:
-	Vector2 shoot_dir;
-};
-class Bullet : GameObject {
-	int damage;
-};
-class Enemy : GameObject {
-	int hp;
-};
-class orc : Enemy {
-
-};
-
-struct bullet {
-	int speed = 5;
-	Vector2 velocity;
-	Vector2 position;
-	int damage;
-};
-
-struct enemy {
-	float speed = 1.25;
-	Vector2 velocity;
-	Vector2 position;
-	int hp;
-	int anim_counter = 0;
-	bool right_foot;
-};
-
-struct powerUp {
-	Vector2 position;
-	char type;
-	int despawn_timer = 0;
-};
+int active_enemies = 0;
+int max_active_enemies = 5;
+int enemy_creation_delay = 30;
+int frames_since_enemy_spawn = 0;
 
 struct trial_obs {
 	bool alive = true;
@@ -123,12 +72,10 @@ struct death_anim {
 };
 
 //bullet vectors
-std::vector<bullet> bullet_tracker{};
-std::vector<bullet> bullet_pool{};
 
 //enemy vectors
-std::vector<enemy> enemy_tracker{};
-std::vector<enemy> enemy_pool{};
+std::vector<Enemy> enemy_tracker{};
+std::vector<Enemy> enemy_pool{};
 
 //obstacle vector
 std::vector<Obstacle> obstacle_tracker{};
@@ -136,8 +83,8 @@ std::vector<Obstacle> obstacle_pool{};
 
 //power up vector
 
-std::vector<powerUp> powerUp_tracker{};
-std::vector<powerUp> powerUp_pool{};
+std::vector<PowerUp> powerUp_tracker{};
+std::vector<PowerUp> powerUp_pool{};
 
 //death animations
 std::vector<death_anim> deathAnim_tracker{};
@@ -355,8 +302,8 @@ void InitGame() {
 	SetTargetFPS(60);
 	game_started = false;
 	zoom_completed = false;
-	lives = 3;
-	player_pos = { left_margin + (area_size / 2), tile_size + (area_size * 3 / 4)};
+	player.set_hp(3);
+	player.set_position({ left_margin + (area_size / 2), tile_size + (area_size * 3 / 4)});
 	InitAudioDevice();
 	LoadAssets();
 	//start playing music
@@ -401,72 +348,13 @@ void UpdateDeathScreen() {
 
 }
 
-void PlayerMovement() {
-	//Mov_dir = 0;
-	if (IsKeyDown('A') && !xNegBlock) {
-		//player_pos = { player_pos.x - player_Speed, player_pos.y };
-		player_mov_dir.x = -1;
-		Mov_dir = 3;
-		
-	}
-	else if (IsKeyDown('D') && !xPosBlock) {
-		//player_pos = { player_pos.x + player_Speed, player_pos.y };
-		player_mov_dir.x = 1;
-		Mov_dir = 1;
-		
-	}
-
-	if (IsKeyDown('S') && !yPosBlock) {
-		//player_pos = { player_pos.x, player_pos.y + player_Speed };
-		player_mov_dir.y = 1;
-		Mov_dir = 2;
-		
-	}
-	else if (IsKeyDown('W') && !yNegBlock) {
-		//player_pos = { player_pos.x, player_pos.y - player_Speed };
-		player_mov_dir.y = -1;
-		Mov_dir = 4;
-		
-	}
-
-	//in order to make diagonal movements as fast as horizontal and vertical movements we must reduce the velocity in both directions
-	if (player_mov_dir.y != 0 && player_mov_dir.x != 0) {
-		player_pos = { player_pos.x + player_mov_dir.x * player_Speed * 0.707f, player_pos.y + player_mov_dir.y * player_Speed * 0.707f};
-	}
-	else{
-		player_pos = {player_pos.x + player_mov_dir.x * player_Speed, player_pos.y + player_mov_dir.y * player_Speed};
-	}
-	
-	//x axis limits
-	if (player_pos.x > area_size + (tile_size)) {
-		player_pos = { area_size + (tile_size), player_pos.y };
-	}
-	else if (player_pos.x < (tile_size * 4)) {
-		player_pos = { (tile_size * 4), player_pos.y };
-	}
-	//y axis limits
-	if (player_pos.y > area_size - tile_size) {
-		player_pos = { player_pos.x, area_size - tile_size };
-	}
-	else if (player_pos.y < tile_size*2) {
-		player_pos = { player_pos.x, tile_size*2 };
-	}
-	player_mov_dir = { 0, 0 };
-	//restart block variables
-	xPosBlock = false;
-	xNegBlock = false;
-	yPosBlock = false;
-	yNegBlock = false;
-	
-}
-
-void createEnemies() {
-	if (active_enemies < max_active_enemies && frames_since_enemy_spawn >= enemy_creation_delay) {
+void createEnemy() {
+if (active_enemies < max_active_enemies && frames_since_enemy_spawn >= enemy_creation_delay) {
 		randVal = GetRandomValue(0, 11);
-		Vector2 pos = {0, 0};
 		frames_since_enemy_spawn = 0;
+		Vector2 pos;
 		switch (randVal) {
-			//costat de dalt
+			// up
 		case 0:
 			pos = { tile_size * 10, tile_size };
 			break;
@@ -476,7 +364,8 @@ void createEnemies() {
 		case 2:
 			pos = { tile_size * 12, tile_size };
 			break;
-			//costat esquerra
+
+			// left
 		case 3:
 			pos = { left_margin, tile_size * 8 };
 			break;
@@ -487,7 +376,7 @@ void createEnemies() {
 			pos = { left_margin, tile_size * 10 };
 			break;
 
-			//costat dret
+			// right
 		case 6:
 			pos = { tile_size * 19, tile_size * 8 };
 			break;
@@ -497,7 +386,8 @@ void createEnemies() {
 		case 8:
 			pos = { tile_size * 19, tile_size * 10 };
 			break;
-			//costat de baix
+
+			// down
 		case 9:
 			pos = { tile_size * 11,  tile_size * 16 };
 			break;
@@ -507,239 +397,48 @@ void createEnemies() {
 		case 11:
 			pos = { tile_size * 13, tile_size * 16 };
 			break;
-		defalult:
-			cout << "the random value has a wrong value" << endl;
+		default:
+			std::cout << "the random value has a wrong value" << std::endl;
+			break;
 		}
 		if (enemy_pool.empty()) {
-			enemy baddie;
-			baddie.position = pos;
-			baddie.hp = 1;
-			enemy_tracker.push_back(baddie);
+			Enemy enemy(pos);
+			enemy_tracker.push_back(enemy);
 		}
 		else {
 			enemy_tracker.push_back(enemy_pool.back());
-			enemy_tracker.back().hp = 1;
-			enemy_tracker.back().position = pos;
+			enemy_tracker.back().set_hp(1);
+			enemy_tracker.back().set_rec({pos.x, pos.y, tile_size, tile_size});
 			enemy_pool.pop_back();
 		}
 		active_enemies++;
-	
+
 	}
 	else {
 		frames_since_enemy_spawn++;
 	}
 }
 
-void enemyMovement() {
-	//delete this trial code
+void moveEnemies() {
 	float magnitude;
 	for (int i = 0; i < enemy_tracker.size(); i++) {
-		magnitude = sqrt((player_pos.x - enemy_tracker[i].position.x) * (player_pos.x - enemy_tracker[i].position.x) + (player_pos.y - enemy_tracker[i].position.y) * (player_pos.y - enemy_tracker[i].position.y));
-		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
+		magnitude = sqrt((player.get_rec().x - enemy_tracker[i].get_rec().x) * (player.get_rec().x - enemy_tracker[i].get_rec().x) + (player.get_rec().y - enemy_tracker[i].get_rec().y) * (player.get_rec().y - enemy_tracker[i].get_rec().y));
+		enemy_tracker[i].set_rec({ enemy_tracker[i].get_rec().x + ((player.get_rec().x - enemy_tracker[i].get_rec().x) / magnitude) * enemy_tracker[i].get_speed(), enemy_tracker[i].get_rec().y + ((player.get_rec().y - enemy_tracker[i].get_rec().y) / magnitude) * enemy_tracker[i].get_speed() });
 	}
-	//magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
-	/*if (tri.alive) {
-		tri.position = { tri.position.x + ((player_pos.x - tri.position.x) / magnitude) * 2, tri.position.y + ((player_pos.y - tri.position.y) / magnitude) * 2 };
-	}*/
 }
 
 //BULLETS MANAGER
 
-void bulletShooting() {
-	Shoot_dir = { 0, 0 };
-	//we get the direction of the bullet
-	if (IsKeyDown(KEY_UP)) {
-		Shoot_dir = { Shoot_dir.x, -1 };
-		anim_dir = 4;
-	}
-	else if (IsKeyDown(KEY_DOWN)) {
-		Shoot_dir = { Shoot_dir.x, 1 };
-		anim_dir = 2;
-	}
-	if (IsKeyDown(KEY_RIGHT)) {
-		Shoot_dir = { 1, Shoot_dir.y };
-		anim_dir = 1;
-	}
-	else if (IsKeyDown(KEY_LEFT)) {
-		Shoot_dir = { -1, Shoot_dir.y };
-		anim_dir = 3;
-	}
-
-	//create bullets
-	if ((Shoot_dir.x != 0 || Shoot_dir.y != 0) && fire_frame_counter % fire_rate == 0) {
-		//first look for bullets in the pool
-		PlaySound(shoot_fx);
-		if (bullet_pool.empty()) {
-			struct bullet b;
-			b.damage = damage;
-			b.position = { player_pos.x, player_pos.y};
-			b.velocity = Shoot_dir;
-			bullet_tracker.push_back(b);
-		}
-		else {
-			bullet_tracker.push_back(bullet_pool.back());
-			bullet_tracker.back().damage = damage;
-			bullet_tracker.back().position = { player_pos.x + tile_size / 4 , player_pos.y + tile_size / 4 };
-			bullet_tracker.back().velocity = Shoot_dir;
-			bullet_pool.pop_back();
-		}
-		fire_frame_counter++;
-	}
-	else if (fire_frame_counter % fire_rate != 0) {
-		fire_frame_counter++;
-	}
-	//Shoot_dir = { 0, 0 };
-}
-
-void bulletUpdate() {
-	//get the lenght of the bullet vector
-	//update bullet's position
-	for (int i = 0; i < bullet_tracker.size(); i++) {
-		bullet& b = bullet_tracker[i];
-		if (b.velocity.x != 0 && b.velocity.y != 0) {
-			b.position = Vector2{ b.position.x + b.velocity.x * b.speed * 0.707f, b.position.y + b.velocity.y * b.speed * 0.707f};
-		}
-		else {
-			b.position = Vector2{ b.position.x + b.velocity.x * b.speed, b.position.y + b.velocity.y * b.speed };
-		}
-	}
-
-	//destroy bullets
-	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
-		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
-		if ((bullet_tracker[i].position.x <= left_margin || bullet_tracker[i].position.x >= area_size + (left_margin) || bullet_tracker[i].position.y <= tile_size || bullet_tracker[i].position.y >= area_size + tile_size)) { //&& bullet_tracker[i] != NULL
-			//save the bullet in the pool
-			bullet_pool.push_back(bullet_tracker[i]);
-			//borrar bullet
-			auto& j = bullet_tracker.begin() + i;
-			bullet_tracker.erase(j);
-		}
-
-	}
-}
-
 //POWER UP
 void powerUpUpdate() {
 	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
-		powerUp_tracker[i].despawn_timer++;
-		if (powerUp_tracker[i].despawn_timer > powerUp_lifespan) {
+		powerUp_tracker[i].add_despawn_timer(1);
+		if (powerUp_tracker[i].get_despawn_timer() > powerUp_lifespan) {
 			//guardar power up al pool
 			powerUp_pool.push_back(powerUp_tracker[i]);
 			//borrar powerUp
 			auto& k = powerUp_tracker.begin() + i;
 			powerUp_tracker.erase(k);
-		}
-	}
-}
-
-void playerDeath() {
-	player_dying = true;
-	player_death_anim = 0;
-	PlaySound(player_death);
-	//borrar enemics
-	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
-		//save the bullet in the pool
-		enemy_pool.push_back(enemy_tracker[i]);
-		//borrar bullet
-		auto& j = enemy_tracker.begin() + i;
-		enemy_tracker.erase(j);
-
-	}
-	active_enemies = 0;
-	//borrar totes les bales
-	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
-		//save the bullet in the pool
-		bullet_pool.push_back(bullet_tracker[i]);
-		//borrar bullet
-		auto& j = bullet_tracker.begin() + i;
-		bullet_tracker.erase(j);
-
-	}
-	//borrar tots els power ups
-	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
-		//save the bullet in the pool
-		powerUp_pool.push_back(powerUp_tracker[i]);
-		//borrar bullet
-		auto& j = powerUp_tracker.begin() + i;
-		powerUp_tracker.erase(j);
-
-	}
-}
-
-
-//COLLISIONS
-void player_enemyColl() {
-	bool already_damaged = false;
-	int i = 0;
-	while (!already_damaged && i < enemy_tracker.size()) {
-		if (CheckCollisionCircles({ player_pos.x + (player_size.x / 2), player_pos.y + (player_size.y / 2) }, player_size.x / 2, { enemy_tracker[i].position.x + (tile_size/2), enemy_tracker[i].position.y + (tile_size/2)}, tile_size / 2)) {
-			already_damaged = true;
-			lives--;
-
-			//player death
-			playerDeath();
-
-			if (lives < 0) {
-				cout << "you are dead" << endl;
-			}
-		}
-		i++;
-	}
-}
-
-float GetAngle(Vector2 v, Vector2 u) {
-	float c = (u.x * v.x + u.y * v.y); //prop al cosinus
-	float s = (u.x * v.y - u.y * v.x); //prop al sinus
-
-	return atan2(s, c) + PI;
-}
-
-
-void restrainPlayerMovement(float x, float y) {
-	//define two vectors and use them to conclude the direction of the colision
-	Vector2 v = { 0, 0 };
-	Vector2 u = { 0, 0 };
-
-	//inici vector
-	float x0 = player_pos.x;
-	float y0 = player_pos.y;
-
-	//v va des del centre del obstacle (cantonada esquerra de dalt) al centre del jugador
-	v = { x0 - x, y0 - y };
-	//u va des del centre del jugador al centre de l'obstacle
-	u = { tile_size / 2, 0 };
-	float theta = GetAngle(u, v);
-
-	if (theta >= PI / 4 && theta < 3 * PI / 4) {
-		//colisio per dalt
-		yNegBlock = true;
-	}
-	else if (theta >= 3 * PI / 4 && theta < 5 * PI / 4) {
-		//colisió per l'esquerra
-		xNegBlock = true;
-	}
-	else if (theta >= 5 * PI / 4 && theta < 7 * PI / 4) {
-		//colisio per baix
-		yPosBlock = true;
-	}
-	else if (theta >= 7 * PI / 4 || theta < PI / 4) {
-		//colisio per la dreta
-		xPosBlock = true;
-	}
-	else {
-		cout << "error when calculating the angle" << endl;
-	}
-
-	return;
-
-}
-
-void player_obstacleColl() {
-	//check all obstacle colliders
-	Rectangle rec_player = { player_pos.x, player_pos.y, tile_size, tile_size };
-	for (int i = 0; i < obstacle_tracker.size(); i++) {
-		if (CheckCollisionRecs(rec_player, obstacle_tracker[i].get_rec())) {
-			restrainPlayerMovement(obstacle_tracker[i].get_rec().x, obstacle_tracker[i].get_rec().y);
 		}
 	}
 }
@@ -757,24 +456,23 @@ void spawnPowerUp(float x, float y) {
 			C = 'O';
 			break;
 		default:
-			cout << "type of power up not recognised" << endl;
+			std::cout << "type of power up not recognised" << std::endl;
 			C = '.';
 			break;
 		}
 		
 		if (powerUp_pool.empty()) {
 			//en crea un
-			powerUp p;
-			p.position = { x, y };
-			p.type = C;
-			powerUp_tracker.push_back(p);
+			PowerUp powerUp({x, y});
+			powerUp.set_type(C);
+			powerUp_tracker.push_back(powerUp);
 		}
 		else {
 			// agafa un del pool
 			powerUp_tracker.push_back(powerUp_pool.back());
-			powerUp_tracker.back().position = {x , y};
-			powerUp_tracker.back().type = C;
-			powerUp_tracker.back().despawn_timer = 0;
+			powerUp_tracker.back().set_position({x , y});
+			powerUp_tracker.back().set_type(C);
+			powerUp_tracker.back().set_despawn_timer(0);
 			powerUp_pool.pop_back();
 		}
 		
@@ -794,82 +492,6 @@ void createDeathAnimation(Vector2 pos) {
 			deathAnim_tracker.back().frameCounter = 0;
 			deathAnim_pool.pop_back();
 		}
-}
-
-void bullet_enemyColl() { //bug here?
-	//comprovar totes les bales per tots els enemics
-	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
-		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
-			if (enemy_tracker.size() - 1 >= i && bullet_tracker.size() - 1 >= j && !enemy_tracker.empty() && !bullet_tracker.empty()) {
-				if (CheckCollisionCircles({ bullet_tracker[j].position.x + tile_size / 2, bullet_tracker[j].position.y + tile_size / 2 }, tile_size / 8, { enemy_tracker[i].position.x + tile_size/2, enemy_tracker[i].position.y + tile_size / 2 }, tile_size / 2)) { //MASSIVE ERROR
-					//save the bullet in the pool
-					bullet_pool.push_back(bullet_tracker[j]);
-					//borrar bullet
-					auto& k = bullet_tracker.begin() + j;
-					bullet_tracker.erase(k);
-
-					//reduce hit enemy hitpoints
-					enemy_tracker[i].hp -= damage;
-					//kill enemy if hitpoints are 0 or lower
-					if (enemy_tracker[i].hp <= 0) {
-
-						//save the enemy in the pool
-						enemy_pool.push_back(enemy_tracker[i]);
-
-						//mirar si es crea un power up
-						spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
-
-						//crea un death animations object
-						createDeathAnimation(enemy_tracker[i].position);
-
-						//borrar enemy
-						auto& e = enemy_tracker.begin() + i;
-						enemy_tracker.erase(e);
-						active_enemies--;
-
-					}
-				}
-			}
-			
-		}
-	}
-}
-
-void bullet_obstacleColl() { //bug here?
-	for (int j = 0; j < obstacle_tracker.size(); j++) {
-		for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
-
-			if (CheckCollisionCircles({ bullet_tracker[i].position.x + tile_size/2, bullet_tracker[i].position.y + tile_size / 2 }, tile_size / 8, { obstacle_tracker[j].get_rec().x + tile_size / 2, obstacle_tracker[j].get_rec().y + tile_size / 2}, tile_size / 2)) {
-				//save the bullet in the pool
-				bullet_pool.push_back(bullet_tracker[i]);
-				//borrar bullet
-				auto& k = bullet_tracker.begin() + i;
-				bullet_tracker.erase(k);
-			}
-		}
-	}
-}
-
-void player_powerUpColl() {
-	for (int i = powerUp_tracker.size() - 1; i >= 0; i--){
-		if (CheckCollisionCircles({ player_pos.x + (player_size.x / 2), player_pos.y + (player_size.y / 2) }, player_size.x / 2, { powerUp_tracker[i].position.x + tile_size / 2, powerUp_tracker[i].position.y + tile_size / 2 }, tile_size / 4)) {
-			switch (powerUp_tracker[i].type) {
-			case 'U': //vida extra
-				lives++;
-				PlaySound(power_up_pick_up);
-				break;
-			case 'O'://monedes
-				coins++;
-				PlaySound(coin_sound);
-				break;
-			}
-			//guardar power up al pool
-			powerUp_pool.push_back(powerUp_tracker[i]);
-			//borrar powerUp
-			auto& k = powerUp_tracker.begin() + i;
-			powerUp_tracker.erase(k);
-		}
-	}
 }
 
 void updateDeathAnimations() {
@@ -949,17 +571,19 @@ void UpdateGame() {//update variables and positions
 		//MUSIC
 		UpdateMusicStream(main_theme);
 		if (!player_dying) {
-			//MOVEMENT
-			PlayerMovement();
-			//ENEMY MOVEMENT
-			enemyMovement();
 
 			//CREATE ENEMIES
 			if (frames_since_level_start < level_length) {
-				createEnemies();
+				createEnemy();
 				//incrementar variable temps
 				frames_since_level_start++;
 			}
+
+			//MOVEMENT
+			PlayerMovement();
+
+			moveEnemies();
+
 			//SHOOTING BULLETS
 			bulletShooting();
 
@@ -1164,15 +788,14 @@ void DrawUI() {
 	DrawRectangle(tile_size * 4, tile_size * 0.45, leangth, tile_size * 0.4, GREEN);
 }
 void DrawEnemies() {
-	int enemy_amount = enemy_tracker.size();
-	for (int i = 0; i < enemy_amount; i++) {
-		if (enemy_tracker[i].right_foot) {
+	for (int i = 0; i < enemy_tracker.size(); i++) {
+		if (enemy_tracker[i].get_right_foot()) {
 			src = { 0, 0, 16, 16 };
 		}
 		else {
 			src = { 16, 0, 16, 16 };
 		}
-		DrawTexturePro(orc_spritesheet, src, { enemy_tracker[i].position.x, enemy_tracker[i].position.y , tile_size, tile_size }, { 0,0 }, 0, WHITE);
+		DrawTexturePro(orc_spritesheet, src, { enemy_tracker[i].get_rec().x, enemy_tracker[i].get_rec().y , tile_size, tile_size}, {0,0}, 0, WHITE);
 	}
 }
 void DrawBullets() {
@@ -1255,7 +878,7 @@ void DrawGame() {//draws the game every frame
 		ClearBackground(BLACK);
 
 		//draw map
-		map_list[level_count].draw(tile_size, left_margin, bush_frame, obstacles_positioned, obstacle_pool, obstacle_tracker, desert_textures, forest_textures);
+		map_list[level_count].draw(bush_frame, obstacles_positioned, obstacle_pool, obstacle_tracker, desert_textures, forest_textures);
 
 		//draw enmie death animation
 		DrawDeathAnimations();

@@ -11,7 +11,7 @@ std::string Map::getStr()
 char Map::getS() {
 	return S;
 }
-void Map::draw(const float tile_size, const float left_margin, bool bush_frame, bool& obstacles_positioned, std::vector<Obstacle>& obstacle_pool, std::vector<Obstacle>& obstacle_tracker, const std::vector<Texture2D>& desert_textures, const std::vector<Texture2D>& forest_textures) {
+void Map::draw(const float left_margin, bool bush_frame, bool& obstacles_positioned, std::vector<Obstacle>& obstacle_pool, std::vector<Obstacle>& obstacle_tracker, const std::vector<Texture2D>& desert_textures, const std::vector<Texture2D>& forest_textures) {
     Rectangle src;
     if (bush_frame == 0) {
         src = { 0.0f, 0.0f, 16.0f, 16.0f };

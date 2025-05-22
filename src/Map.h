@@ -10,11 +10,12 @@ class Map {
 private:
 	std::string M;
 	char S;
+	const float tile_size = 32;
+	const float left_margin = tile_size * 3;
 public:
 	Map() = default;
 	Map(const char* F, char C);
 	std :: string getStr();
 	char getS();
-	void positionObstacle(float x, float y, const float tile_size, std::vector<Obstacle>& obstacle_pool, std::vector<Obstacle>& obstacle_tracker);
-	void draw(const float tile_size, const float left_margin, bool bush_frame, bool& obstacles_positioned, std::vector<Obstacle>& obstacle_pool, std::vector<Obstacle>& obstacle_tracker, const std::vector<Texture2D>& desert_textures, const std::vector<Texture2D>& forest_textures);
+	void draw(bool bush_frame, bool& obstacles_positioned, std::vector<Obstacle>& obstacle_pool, std::vector<Obstacle>& obstacle_tracker, const std::vector<Texture2D>& desert_textures, const std::vector<Texture2D>& forest_textures);
 };
