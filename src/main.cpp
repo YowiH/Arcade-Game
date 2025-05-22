@@ -62,6 +62,20 @@ int level_count = 0;
 int powerUp_lifespan = 600;
 bool obstacles_positioned = false;
 
+//shop 
+bool shop_active = false;
+bool shop_item_bought = false;
+int shop_phase = 0; // 0 = inactive, 1 = entering, 2 = idle/shop, 3 = exiting
+float shop_timer = 0; // for timing entry/exit animations
+int shopkeeper_frame = 0;
+Vector2 shopkeeper_pos = { (area_size / 2) + left_margin, tile_size };
+Vector2 shopkeeper_dest = { (area_size / 2) + left_margin, area_size };
+Texture2D item_sprites[3]; // 0 = boot, 1 = gun, 2 = backpack/ammo
+int player_held_item = -1; // for hold-up animation, -1 if none
+float hold_up_timer = 0;
+
+
+
 enum stage {
 	DESERT,
 	FOREST
@@ -133,7 +147,15 @@ struct death_anim {
 	int frameCounter = 0;
 };
 
+//shop items
+struct ShopItem {
+	Vector2 position;
+	int cost;
+	char type;
+};
 
+//shop vector
+std::vector<ShopItem> current_shop_items;
 
 //bullet vectors
 std::vector<bullet> bullet_tracker{};
@@ -297,6 +319,7 @@ void LoadAssets() {
 
 	//SHOP
 	shop_keeper_spritesheet = LoadTexture("shop_keeper_spritesheet.png");
+
 
 	//UI
 	timer = LoadTexture("clock.png");
@@ -973,16 +996,155 @@ void changeLevel() {
 }
 
 //SHOP
-void DrawShopKeeper() {
-	if (animation_frame_counter % 120 == 0) {
-		src = { 0, 0, 16, 16 };
+void StartShop() {
+	shop_active = true;
+	shop_item_bought = false;
+	shop_phase = 1;
+	shop_timer = 0;
+	shopkeeper_pos = { (area_size / 2) + left_margin, tile_size };
+}
+
+
+void DrawShop(Texture2D boot_tex, Texture2D gun_tex, Texture2D backpack_tex, Texture2D shop_ui_tex) {
+	Rectangle src = { tile_size * shopkeeper_frame, 0, tile_size, tile_size };
+	DrawTextureRec(shop_keeper_spritesheet, src, shopkeeper_pos, WHITE);
+	
+	int shop_index = level_count / 2 - 1;
+
+	struct Item {
+		Vector2 pos;
+		int cost;
+		Texture2D* tex;
+		int index;
+		char type; // 'B', 'G', 'P'
+	};
+
+	Item items[3];
+
+	// Boot
+	items[0].pos = { shop_ui_pos.x + tile_size * 0.5f, shop_ui_pos.y + tile_size * 0.5f };
+	items[0].cost = 8;
+	items[0].tex = &boot_tex;
+	items[0].index = (shop_index == 0) ? 0 : 1; // 2 versions only
+	items[0].type = 'B';
+
+	// Gun
+	items[1].pos = { shop_ui_pos.x + tile_size * 2.0f, shop_ui_pos.y + tile_size * 0.5f };
+	items[1].cost = (shop_index < 2) ? 10 : 20;
+	items[1].tex = &gun_tex;
+	items[1].index = shop_index; // 0,1,2
+	items[1].type = 'G';
+
+	// Backpack
+	items[2].pos = { shop_ui_pos.x + tile_size * 3.5f, shop_ui_pos.y + tile_size * 0.5f };
+	items[2].cost = (shop_index == 0) ? 15 : (shop_index == 1 ? 15 : (shop_index == 2 ? 30 : 45));
+	items[2].tex = &backpack_tex;
+	items[2].index = shop_index; // 0–2
+	items[2].type = 'P';
+
+	for (int i = 0; i < 3; i++) {
+		Rectangle src = { tile_size * items[i].index, 0, tile_size, tile_size };
+		DrawTextureRec(*items[i].tex, src, items[i].pos, WHITE);
+
+		// Draw coin cost below the item
+		DrawTextEx(font, TextFormat("%i", items[i].cost),
+			{ items[i].pos.x + 4, items[i].pos.y + tile_size + 2 },
+			tile_size / 2, 1, BLACK);
 	}
-	else {
-		src = { 16 * 1, 0, 16, 16 };
-	}
-	DrawTexturePro(shop_keeper_spritesheet, src, { tile_size * 10, tile_size, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
 
 }
+
+void UpdateShop() {
+	float speed = area_size / 120.0f; // ~2 seconds to center
+	if (shop_phase == 1) { // entering
+		shopkeeper_pos.y += speed;
+		shop_timer += GetFrameTime();
+		if ((int)(shopkeeper_pos.y / tile_size * 3) % 2 == 0) shopkeeper_frame = 0;
+		else shopkeeper_frame = 1;
+		if (shopkeeper_pos.y >= area_size) {
+			shopkeeper_pos.y = area_size;
+			shop_phase = 2;
+		}
+	}
+	else if (shop_phase == 2) { // idle/shop active
+		HandleShopPurchase(); // allows item collision
+		if (shop_item_bought) {
+			shop_phase = 3;
+			shop_timer = 0;
+			hold_up_timer = 2.0f;
+		}
+	}
+	else if (shop_phase == 3) { // hold-up + exit
+		shop_timer += GetFrameTime();
+		hold_up_timer -= GetFrameTime();
+		if (hold_up_timer <= 0) {
+			shopkeeper_pos.y -= speed;
+			if ((int)(shopkeeper_pos.y / tile_size * 3) % 2 == 0) shopkeeper_frame = 0;
+			else shopkeeper_frame = 1;
+			if (shopkeeper_pos.y <= tile_size) {
+				shop_active = false;
+				shop_phase = 0;
+				player_held_item = -1;
+			}
+		}
+	}
+}
+
+void HandleShopPurchase() {
+	Vector2 ui_pos = { (area_size / 2) + left_margin - tile_size * 2, area_size - tile_size * 4 };
+	for (int i = 0; i < 3; i++) {
+		float item_x = ui_pos.x + tile_size * i + tile_size / 2;
+		float item_y = ui_pos.y + tile_size;
+		if (CheckCollisionCircles(
+			{ player_pos.x + tile_size / 2, player_pos.y + tile_size / 2 }, tile_size / 2,
+			{ item_x + tile_size / 2, item_y + tile_size / 2 }, tile_size / 2)) {
+
+			int cost = GetItemCost(i);
+			if (coins >= cost && CanBuyItem(i)) {
+				coins -= cost;
+				ApplyItemEffect(i);
+				player_held_item = i;
+				shop_item_bought = true;
+				break;
+			}
+		}
+	}
+}
+
+bool upgrades_bought[3] = { false, false, false };
+int backpack_level = 0;
+int gun_level = 0;
+
+bool CanBuyItem(int id) {
+	if (id == 0) return !upgrades_bought[0];
+	return true;
+}
+
+int GetItemCost(int id) {
+	if (level_count == 2) return (id == 0 ? 8 : id == 1 ? 10 : 15);
+	if (level_count == 4) return (id == 0 ? 8 : id == 1 ? 10 : 15);
+	if (level_count == 6) return (id == 0 ? 8 : id == 1 ? 20 : 30);
+	if (level_count == 8) return (id == 0 ? 8 : id == 1 ? 20 : 45);
+	return 999;
+}
+
+void ApplyItemEffect(int id) {
+	switch (id) {
+	case 0: // boot
+		player_Speed += 0.5f;
+		upgrades_bought[0] = true;
+		break;
+	case 1: // gun
+		fire_rate -= (gun_level == 0 ? 2 : 1);
+		gun_level++;
+		break;
+	case 2: // backpack
+		damage += 1;
+		backpack_level++;
+		break;
+	}
+}
+
 
 //UPDATE GAME
 void UpdateGame() {//update variables and positions
@@ -1027,9 +1189,14 @@ void UpdateGame() {//update variables and positions
 			//player power-up colisions
 			player_powerUpColl();
 
-			if()
-
 			changeLevel();
+
+			if (frames_since_level_start >= level_length && active_enemies <= 0 && !shop_active) {
+				StartShop();
+			}
+			if (shop_active) {
+				UpdateShop();
+			}
 
 		}
 
@@ -1460,6 +1627,10 @@ void DrawGame() {//draws the game every frame
 
 		//draw bullets
 		DrawBullets();
+
+		if (shop_active) {
+			UpdateShop();
+		}
 
 	}
 	else if (!game_started) {
