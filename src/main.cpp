@@ -45,7 +45,7 @@ int player_death_anim = 0;
 bool player_right_foot;
 bool player_dying;
 int lives = 3;
-int coins = 0;
+int coins = 100;
 int damage = 1;
 bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
 
@@ -319,6 +319,10 @@ void LoadAssets() {
 
 	//SHOP
 	shop_keeper_spritesheet = LoadTexture("shop_keeper_spritesheet.png");
+	shop_blanket = LoadTexture("shop_blanket.png");
+	boots = LoadTexture("boots.png");
+	guns = LoadTexture("guns.png");
+	ammunition = LoadTexture("ammunition.png");
 
 
 	//UI
@@ -375,6 +379,10 @@ void UnloadGame() {
 
 	//shop
 	UnloadTexture(shop_keeper_spritesheet);
+	UnloadTexture(shop_blanket);
+	UnloadTexture(boots);
+	UnloadTexture(guns);
+	UnloadTexture(ammunition);
 
 	//sounds
 	UnloadSound(shoot_fx);
@@ -996,10 +1004,6 @@ void changeLevel() {
 }
 
 //SHOP
-
-
-
-
 void StartShop() {
 	shop_active = true;
 	shop_item_bought = false;
@@ -1009,11 +1013,22 @@ void StartShop() {
 }
 
 Font font;
+void DrawShopkeeper() {
+	Rectangle shopkeeper_src = { 16 * shopkeeper_frame, 0, 16, 16 };
+	DrawTexturePro(shop_keeper_spritesheet, shopkeeper_src,
+		{ shopkeeper_pos.x, shopkeeper_pos.y, tile_size, tile_size },
+		{ 0, 0 }, 0, WHITE);
+}
 
-void DrawShop(Font font) {
-	Rectangle src = { tile_size * shopkeeper_frame, 0, tile_size, tile_size };
-	DrawTexturePro(shop_keeper_spritesheet, src, { shopkeeper_pos.x, shopkeeper_pos.y, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
-	
+
+void DrawShopUI(Font font) {
+	Vector2 shop_ui_pos = { shopkeeper_pos.x - 35, area_size/3 + tile_size };
+
+	Rectangle src = { 0, 0, 64, 32 }; //its giving me bad things when i use tile_size
+	Rectangle dest = { shop_ui_pos.x, shop_ui_pos.y, tile_size * 4, tile_size * 2 };
+	Vector2 origin = { 0, 0 };
+	DrawTexturePro(shop_blanket, src, dest, origin, 0.0f, WHITE);
+
 	int shop_index = level_count / 2 - 1;
 
 	struct Item {
@@ -1023,47 +1038,57 @@ void DrawShop(Font font) {
 		int index;
 		char type; // 'B', 'G', 'P'
 	};
-	/*
+
 	Item items[3];
 
 	// Boot
-	items[0].pos = { shop_ui_pos.x + tile_size * 0.5f, shop_ui_pos.y + tile_size * 0.5f };
-	items[0].cost = 8;
+	items[0].pos = { shop_ui_pos.x + tile_size * 0.55f, shop_ui_pos.y + tile_size * 0.25f };
+	items[0].cost = 1;
 	items[0].tex = boots;
 	items[0].index = (shop_index == 0) ? 0 : 1; // 2 versions only
 	items[0].type = 'B';
 
 	// Gun
-	items[1].pos = { shop_ui_pos.x + tile_size * 2.0f, shop_ui_pos.y + tile_size * 0.5f };
+	items[1].pos = { shop_ui_pos.x + tile_size * 1.65f, shop_ui_pos.y + tile_size * 0.25f };
 	items[1].cost = (shop_index < 2) ? 10 : 20;
 	items[1].tex = guns;
 	items[1].index = shop_index; // 0,1,2
 	items[1].type = 'G';
 
 	// Backpack
-	items[2].pos = { shop_ui_pos.x + tile_size * 3.5f, shop_ui_pos.y + tile_size * 0.5f };
+	items[2].pos = { shop_ui_pos.x + tile_size * 2.8f, shop_ui_pos.y + tile_size * 0.25f };
 	items[2].cost = (shop_index == 0) ? 15 : (shop_index == 1 ? 15 : (shop_index == 2 ? 30 : 45));
 	items[2].tex = ammunition;
 	items[2].index = shop_index; // 0–2
 	items[2].type = 'P';
 
 	for (int i = 0; i < 3; i++) {
-		Rectangle src = { tile_size items[i].index, 0, tile_size, tile_size };
-		DrawTextureRec(items[i].tex, src, items[i].pos, WHITE);
+		Rectangle src = { 16 * items[i].index, 0, 16, 16 }; 
+		Rectangle dest = { items[i].pos.x, items[i].pos.y, tile_size, tile_size  }; // scale by 1.5x
+		Vector2 origin = { 0, 0 };
+		DrawTexturePro(items[i].tex, src, dest, origin, 0.0f, WHITE);
 
 		// Draw coin cost below the item
 		DrawTextEx(font,TextFormat("%i", items[i].cost),
-			{ items[i].pos.x + 4, items[i].pos.y + tile_size + 2 },
+			{ items[i].pos.x + 3, items[i].pos.y + tile_size +2 },
 			tile_size / 2, 1, BLACK);
-	}*/
+	}
+
+	//THIS DOESNT WORK!!
+	if (player_held_item >= 0) {
+		Texture2D tex = items[player_held_item].tex;
+		int index = items[player_held_item].index;
+		Rectangle src = { 16 * index, 0, 16, 16 };
+		Rectangle dest = { 10, area_size + 10, tile_size * 0.5f, tile_size * 0.5f };
+		DrawTexturePro(tex, src, dest, { 0, 0 }, 0.0f, WHITE);
+	}
+
 
 }
-
 
 bool upgrades_bought[3] = { false, false, false };
 int backpack_level = 0;
 int gun_level = 0;
-
 
 bool CanBuyItem(int id) {
 	if (id == 0) return !upgrades_bought[0];
@@ -1098,11 +1123,18 @@ void ApplyItemEffect(int id) {
 void HandleShopPurchase() {
 	Vector2 ui_pos = { (area_size / 2) + left_margin - tile_size * 2, area_size - tile_size * 4 };
 	for (int i = 0; i < 3; i++) {
+
 		float item_x = ui_pos.x + tile_size * i + tile_size / 2;
 		float item_y = ui_pos.y + tile_size;
+
+		float scale = 1.5f;
+		float radius = (tile_size * scale) / 2.0f;
+
 		if (CheckCollisionCircles(
-			{ player_pos.x + tile_size / 2, player_pos.y + tile_size / 2 }, tile_size / 2,
-			{ item_x + tile_size / 2, item_y + tile_size / 2 }, tile_size / 2)) {
+			{ player_pos.x + (player_size.x / 2), player_pos.y + (player_size.y / 2) },
+			player_size.x / 2,
+			{ item_x + (tile_size / 2), item_y + (tile_size / 2) },
+			tile_size / 2)){
 
 			int cost = GetItemCost(i);
 			if (coins >= cost && CanBuyItem(i)) {
@@ -1117,14 +1149,14 @@ void HandleShopPurchase() {
 }
 
 void UpdateShop() {
-	float speed = area_size / 60.0f; // ~2 seconds to center
+	float speed = area_size / 600.0f; // ~2 seconds to center
 	if (shop_phase == 1) { // entering
 		shopkeeper_pos.y += speed;
 		shop_timer += GetFrameTime();
 		if ((int)(shopkeeper_pos.y / tile_size * 3) % 2 == 0) shopkeeper_frame = 0;
 		else shopkeeper_frame = 1;
-		if (shopkeeper_pos.y >= area_size) {
-			shopkeeper_pos.y = area_size;
+		if (shopkeeper_pos.y >= area_size/3) {
+			shopkeeper_pos.y = area_size/3;
 			shop_phase = 2;
 		}
 	}
@@ -1199,8 +1231,10 @@ void UpdateGame() {//update variables and positions
 				StartShop();
 			}
 
+
 			if (shop_active) {
-				DrawShop(font);
+				DrawShopkeeper();
+				DrawShopUI(font);
 				UpdateShop();
 			}
 
@@ -1620,6 +1654,14 @@ void DrawGame() {//draws the game every frame
 		//draw UI
 		DrawUI();
 
+		//shop
+		if (shop_active) {
+			DrawShopkeeper(); // always draw the shopkeeper if shop is active
+			if (shop_phase == 2 || shop_phase == 3) {
+				DrawShopUI(font); // only draw shop UI after shopkeeper reaches center
+			}
+		}
+
 		//draw player
 		if (!player_dying) {
 			DrawPlayer();
@@ -1636,12 +1678,6 @@ void DrawGame() {//draws the game every frame
 
 		//draw bullets
 		DrawBullets();
-
-		DrawShop(font);
-		
-		if (shop_active) {
-			UpdateShop();
-		}
 
 	}
 	else if (!game_started) {
