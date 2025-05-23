@@ -524,28 +524,28 @@ void animationManager() {
 	}
 
 	//PLAYER
-	if (Mov_dir != 0){ //si el player s'està movent
-		player_walk_anim_counter++;
-		if (player_walk_anim_counter % 6 == 0) {
-			player_right_foot = !player_right_foot;
+	if (player.get_mov_dir() != 0){ //si el player s'està movent
+		player.add_walk_anim_counter(1);
+		if (player.get_walk_anim_counter() % 6 == 0) {
+			player.set_right_foot(!player.get_right_foot());
 			//play walking sound
 
 		}
 	}
 	else {
-		player_walk_anim_counter = 0;
+		player.set_walk_anim_counter(0);
 	}
 
-	if (player_dying) {
-		player_death_anim++;
+	if (player.get_is_dying()) {
+		player.add_death_anim(1);
 	}
 
 	//ENEMIES
 	for (int i = 0; i < enemy_tracker.size(); i++) {
-		enemy_tracker[i].anim_counter++;
-		if (enemy_tracker[i].anim_counter % 12 == 0) {
-			enemy_tracker[i].right_foot = !enemy_tracker[i].right_foot;
-			enemy_tracker[i].anim_counter = 0;
+		enemy_tracker[i].add_animation_counter(1);
+		if (enemy_tracker[i].get_animation_counter() % 12 == 0) {
+			enemy_tracker[i].set_right_foot(!enemy_tracker[i].get_right_foot());
+			enemy_tracker[i].set_animation_counter(0);
 		}
 	}
 }
@@ -567,10 +567,10 @@ void changeLevel() {
 //UPDATE GAME
 void UpdateGame() {//update variables and positions
 
-	if (game_started && lives >= 0) {
+	if (game_started && player.get_hp() >= 0) {
 		//MUSIC
 		UpdateMusicStream(main_theme);
-		if (!player_dying) {
+		if (!player.get_is_dying()) {
 
 			//CREATE ENEMIES
 			if (frames_since_level_start < level_length) {
@@ -580,34 +580,34 @@ void UpdateGame() {//update variables and positions
 			}
 
 			//MOVEMENT
-			PlayerMovement();
+			player.move();
 
 			moveEnemies();
 
 			//SHOOTING BULLETS
-			bulletShooting();
+			player.shoot(shoot_fx);
 
 			//update bullets
-			bulletUpdate();
+			player.bullet_update();
 
 			//update power ups
 			powerUpUpdate();
 
 			//COLLISIONS
 			//player-enemies
-			player_enemyColl();
+			player.be_attacked(player_death, enemy_tracker, enemy_pool, active_enemies, powerUp_tracker, powerUp_pool, player.get_bullet_tracker());
 
 			//player-obstacles
-			player_obstacleColl();
+			player.collide(obstacle_tracker);
 
 			//bullet-enemies
-			bullet_enemyColl();
+			player.bullet_attack();
 
 			//bullets-obstacles
-			bullet_obstacleColl();
+			player.bullet_collision();
 
 			//player power-up colisions
-			player_powerUpColl();
+			player.collect(powerUp_tracker, powerUp_pool, power_up_pick_up, coin_sound);
 		}
 
 		//update death animations
@@ -629,143 +629,6 @@ void UpdateGame() {//update variables and positions
 }
 
 //DRAW
-void DrawPlayer() {
-	if (anim_dir != 0) {//esta disparant
-		if (Mov_dir != 0) { //s'esta movent
-			switch (anim_dir) {
-			case 1: //dreta
-				if (player_right_foot) {
-					src = { 16 * 6, 0, 16, 16 };
-				}
-				else {
-					src = { 0, 16, 16, 16 };
-				}
-				break;
-			case 2: //avall
-				if (player_right_foot) {
-					src = { 16 * 4, 0, 16, 16 };
-				}
-				else {
-					src = { 16 * 3, 0, 16, 16 };
-				}
-				break;
-			case 3: //esquerra
-				if (player_right_foot) {
-					src = { 16 * 6, 16, 16, 16 };
-				}
-				else {
-					src = { 16 * 5, 16, 16, 16 };
-				}
-				break;
-			case 4: //amunt 
-				if (player_right_foot) {
-					src = { 16 * 2, 16, 16, 16 };
-				}
-				else {
-					src = { 16 * 3, 16, 16, 16 };
-				}
-				break;
-			case 0:
-				src = { 0, 0, 16, 16 };
-				break;
-			}
-			DrawTexturePro(player_character_spritesheet, src, { player_pos.x, player_pos.y, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
-		}
-		else {//no s'esta movent
-			switch (anim_dir) {
-			case 1: //dreta
-				src = { 16 * 5, 0, 16, 16 };
-				break;
-			case 2: //avall
-				src = {16 * 2, 0, 16, 16};
-				break;
-			case 3: //esquerra
-				src = { 16 * 4, 16, 16, 16 };
-				break;
-			case 4: //amunt 
-				src = { 16 , 16, 16, 16 };
-				break;
-			}
-			DrawTexturePro(player_character_spritesheet, src, { player_pos.x, player_pos.y, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
-
-		}
-	}
-	else {//no esta disparant
-		switch (Mov_dir) {//s'està movent
-		case 1: //dreta
-			if(player_right_foot){
-				src = { 16 * 6, 0, 16, 16 };
-			}
-			else {
-				src = { 0, 16, 16, 16 };
-			}
-			break;
-		case 2: //avall
-			if (player_right_foot) {
-				src = {16 * 4, 0, 16, 16};
-			}
-			else {
-				src = { 16 * 3, 0, 16, 16};
-			}
-			break;
-		case 3: //esquerra
-			if (player_right_foot) {
-				src = {16 * 6, 16, 16, 16};
-			}
-			else {
-				src = { 16 * 5, 16, 16, 16};
-			}
-			break;
-		case 4: //amunt 
-			if (player_right_foot) {
-				src = {16 * 2, 16, 16, 16};
-			}
-			else {
-				src = { 16 * 3, 16, 16, 16};
-			}
-			break;
-		case 0: //no es mou ni dispara
-			src = { 0, 0, 16, 16 };
-			break;
-		}
-		DrawTexturePro(player_character_spritesheet, src, { player_pos.x, player_pos.y, player_size.x, player_size.y }, { 0, 0 }, 0, WHITE);
-	}
-	
-	Shoot_dir = { 0,0 };
-	anim_dir = 0;
-	Mov_dir = 0;
-}
-void DrawPlayerDeath() {
-	//player_walk_anim_counter++;
-	//actualitzar animacions
-	if (player_death_anim < 10) {
-		src = { 0, 0, 16, 16 };
-	}
-	else if (player_death_anim < 10 * 2) {
-		src = { 16 * 1, 0, 16, 16 };
-	}
-	else if (player_death_anim < 10 * 3) {
-		src = { 16 * 2, 0, 16, 16 };
-	}
-	else if (player_death_anim < 10 * 4) {
-		src = { 16 * 3, 0, 16, 16 };
-	}
-	else if (player_death_anim <= 10 * 10) {}
-	else {
-		player_dying = false;
-		player_pos = { left_margin + (area_size / 2), tile_size + (area_size * 3 / 4) };
-		player_death_anim = 0;
-		player_walk_anim_counter = 0;
-		player_death_anim = 0;
-	}
-	//dibuixa si han passat menys de 40 frames 
-	if (player_death_anim < 10 * 4) {
-		//waits
-		DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
-	}
-	//DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
-}
-
 void DrawUI() {
 	//draw clock
 	DrawTextureEx(timer, { left_margin, 0 }, 0, tile_size / 16, WHITE);
@@ -773,12 +636,12 @@ void DrawUI() {
 	//draw life 
 	DrawTextureEx(extra_life, { 0, left_margin }, 0, (tile_size / 16) * 1.25, WHITE);
 	//write actual lives
-	DrawText(TextFormat("X%i", lives), tile_size + tile_size / 2, left_margin + tile_size / 4, 10 * (tile_size / 16), WHITE);
+	DrawText(TextFormat("X%i", player.get_hp()), tile_size + tile_size / 2, left_margin + tile_size / 4, 10 * (tile_size / 16), WHITE);
 
 	//draw coins
 	DrawTextureEx(coin, { 0, tile_size * 4 }, 0, (tile_size / 16) * 1.25, WHITE);
 	//write actual coins
-	DrawText(TextFormat("X%i", coins), tile_size + tile_size/2, tile_size * 4 + tile_size / 4, 10 * (tile_size / 16), WHITE);
+	DrawText(TextFormat("X%i", player.get_coins()), tile_size + tile_size/2, tile_size * 4 + tile_size / 4, 10 * (tile_size / 16), WHITE);
 	
 	//draw power up slot
 	DrawTextureEx(power_up_slot, { tile_size, tile_size}, 0, (tile_size / 16) * 1.25, WHITE);
@@ -798,12 +661,7 @@ void DrawEnemies() {
 		DrawTexturePro(orc_spritesheet, src, { enemy_tracker[i].get_rec().x, enemy_tracker[i].get_rec().y , tile_size, tile_size}, {0,0}, 0, WHITE);
 	}
 }
-void DrawBullets() {
-	int bullet_amount = bullet_tracker.size();
-	for (int i = 0; i < bullet_amount; i++) {
-		DrawTextureEx(bullet_player, bullet_tracker[i].position, 0, tile_size / 16, WHITE);
-	}
-}
+
 void DrawDeathAnimations() {
 	for (int i = 0; i < deathAnim_tracker.size(); i++) {
 		//actualitzar animacions
@@ -830,12 +688,12 @@ void DrawDeathAnimations() {
 }
 void drawPowerUps() {
 	for (int i = 0; i < powerUp_tracker.size(); i++) {
-		switch (powerUp_tracker[i].type) {
+		switch (powerUp_tracker[i].get_type()) {
 		case 'U':
-			DrawTextureEx(extra_life, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
+			DrawTextureEx(extra_life, { powerUp_tracker[i].get_position()}, 0, tile_size / 16, WHITE);
 			break;
 		case 'O':
-			DrawTextureEx(coin, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
+			DrawTextureEx(coin, { powerUp_tracker[i].get_position()}, 0, tile_size / 16, WHITE);
 			break;
 		default:
 			cout << "power up not recognized (drawing)" << endl;
@@ -873,7 +731,7 @@ void DrawGameOverScreen() {
 }
 void DrawGame() {//draws the game every frame
 	BeginDrawing();
-	if (game_started && lives >= 0) {
+	if (game_started && player.get_hp() >= 0) {
 		//draw background
 		ClearBackground(BLACK);
 
@@ -887,11 +745,11 @@ void DrawGame() {//draws the game every frame
 		DrawUI();
 
 		//draw player
-		if (!player_dying) {
-			DrawPlayer();
+		if (!player.get_is_dying()) {
+			player.draw(player_character_spritesheet);
 		}
 		else {
-			DrawPlayerDeath();
+			player.draw_death(player_character_death);
 		}
 
 		//draw enemies
@@ -901,7 +759,7 @@ void DrawGame() {//draws the game every frame
 		drawPowerUps();
 
 		//draw bullets
-		DrawBullets();
+		player.bullet_draw(bullet_player);
 
 	}
 	else if (!game_started) {

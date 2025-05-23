@@ -13,5 +13,6 @@ public:
 	Entity(Rectangle rec);
 	Rectangle get_rec() const;
 	void set_rec(const Rectangle& new_rec);
+	Vector2 get_position() const;
 	void set_position(Vector2 position);
 };

@@ -10,30 +10,210 @@ Player::Player() : Walker(rec) {
 	damage = 1;
 }
 
+bool Player::get_is_dying() const {
+	return is_dying;
+}
+
+int Player::get_coins() const {
+	return coins;
+}
+
+int Player::get_mov_dir() const {
+	return mov_dir;
+}
+
+int Player::get_walk_anim_counter() const {
+	return walk_anim_counter;
+}
+
+std::vector<Bullet> get_bullet_tracker() const {
+	return bullet_tracker;
+}
+
+void Player::add_coins(int amount) {
+	coins += amount;
+}
+
+void Player::add_death_anim(int amount) {
+	death_anim += amount;
+}
+
+void Player::set_is_dying(bool new_state) {
+	is_dying = new_state;
+}
+
+void Player::set_walk_anim_counter(int new_amount) {
+	walk_anim_counter = new_amount;
+}
+
+void Player::set_death_anim(int new_amount) {
+	death_anim = new_amount;
+}
+
+void Player::draw(Texture2D player_character_spritesheet) {
+	Rectangle src;
+	if (anim_dir != 0) {//esta disparant
+		if (mov_dir != 0) { //s'esta movent
+			switch (anim_dir) {
+			case 1: //dreta
+				if (right_foot) {
+					src = { 16 * 6, 0, 16, 16 };
+				}
+				else {
+					src = { 0, 16, 16, 16 };
+				}
+				break;
+			case 2: //avall
+				if (right_foot) {
+					src = { 16 * 4, 0, 16, 16 };
+				}
+				else {
+					src = { 16 * 3, 0, 16, 16 };
+				}
+				break;
+			case 3: //esquerra
+				if (right_foot) {
+					src = { 16 * 6, 16, 16, 16 };
+				}
+				else {
+					src = { 16 * 5, 16, 16, 16 };
+				}
+				break;
+			case 4: //amunt 
+				if (right_foot) {
+					src = { 16 * 2, 16, 16, 16 };
+				}
+				else {
+					src = { 16 * 3, 16, 16, 16 };
+				}
+				break;
+			case 0:
+				src = { 0, 0, 16, 16 };
+				break;
+			}
+			DrawTexturePro(player_character_spritesheet, src, rec, { 0, 0 }, 0, WHITE);
+		}
+		else {//no s'esta movent
+			switch (anim_dir) {
+			case 1: //dreta
+				src = { 16 * 5, 0, 16, 16 };
+				break;
+			case 2: //avall
+				src = { 16 * 2, 0, 16, 16 };
+				break;
+			case 3: //esquerra
+				src = { 16 * 4, 16, 16, 16 };
+				break;
+			case 4: //amunt 
+				src = { 16 , 16, 16, 16 };
+				break;
+			}
+			DrawTexturePro(player_character_spritesheet, src, rec, { 0, 0 }, 0, WHITE);
+
+		}
+	}
+	else {//no esta disparant
+		switch (mov_dir) {//s'està movent
+		case 1: //dreta
+			if (right_foot) {
+				src = { 16 * 6, 0, 16, 16 };
+			}
+			else {
+				src = { 0, 16, 16, 16 };
+			}
+			break;
+		case 2: //avall
+			if (right_foot) {
+				src = { 16 * 4, 0, 16, 16 };
+			}
+			else {
+				src = { 16 * 3, 0, 16, 16 };
+			}
+			break;
+		case 3: //esquerra
+			if (right_foot) {
+				src = { 16 * 6, 16, 16, 16 };
+			}
+			else {
+				src = { 16 * 5, 16, 16, 16 };
+			}
+			break;
+		case 4: //amunt 
+			if (right_foot) {
+				src = { 16 * 2, 16, 16, 16 };
+			}
+			else {
+				src = { 16 * 3, 16, 16, 16 };
+			}
+			break;
+		case 0: //no es mou ni dispara
+			src = { 0, 0, 16, 16 };
+			break;
+		}
+		DrawTexturePro(player_character_spritesheet, src, rec, { 0, 0 }, 0, WHITE);
+	}
+
+	shoot_dir = { 0,0 };
+	anim_dir = 0;
+	mov_dir = 0;
+
+}
+
+void Player::draw_death(Texture2D player_character_death) {
+	//player_walk_anim_counter++;
+	//actualitzar animacions
+	Rectangle src;
+	if (death_anim < 10) {
+		src = { 0, 0, 16, 16 };
+	}
+	else if (death_anim < 10 * 2) {
+		src = { 16 * 1, 0, 16, 16 };
+	}
+	else if (death_anim < 10 * 3) {
+		src = { 16 * 2, 0, 16, 16 };
+	}
+	else if (death_anim < 10 * 4) {
+		src = { 16 * 3, 0, 16, 16 };
+	}
+	else if (death_anim <= 10 * 10) {}
+	else {
+		is_dying = false;
+		set_position({ left_margin + (area_size / 2), tile_size + (area_size * 3 / 4) });
+		walk_anim_counter = 0;
+		death_anim = 0;
+	}
+	//dibuixa si han passat menys de 40 frames 
+	if (death_anim < 10 * 4) {
+		//waits
+		DrawTexturePro(player_character_death, src, rec, { 0,0 }, 0, WHITE);
+	}
+	//DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
+}
+
 void Player::move() {
 	if (IsKeyDown('A') && !xNegBlock) {
 		//player_pos = { player_pos.x - player_Speed, player_pos.y };
 		player_mov_dir.x = -1;
-		Mov_dir = 3;
+		mov_dir = 3;
 
 	}
 	else if (IsKeyDown('D') && !xPosBlock) {
 		//player_pos = { player_pos.x + player_Speed, player_pos.y };
 		player_mov_dir.x = 1;
-		Mov_dir = 1;
+		mov_dir = 1;
 
 	}
 
 	if (IsKeyDown('S') && !yPosBlock) {
 		//player_pos = { player_pos.x, player_pos.y + player_Speed };
 		player_mov_dir.y = 1;
-		Mov_dir = 2;
+		mov_dir = 2;
 
 	}
 	else if (IsKeyDown('W') && !yNegBlock) {
 		//player_pos = { player_pos.x, player_pos.y - player_Speed };
 		player_mov_dir.y = -1;
-		Mov_dir = 4;
+		mov_dir = 4;
 
 	}
 
@@ -67,41 +247,7 @@ void Player::move() {
 	yNegBlock = false;
 }
 
-void Player::die(Sound player_death, std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, int& active_enemies, std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool) {
-	player_dying = true;
-	player_death_anim = 0;
-	PlaySound(player_death);
-	//borrar enemics
-	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
-		//save the bullet in the pool
-		enemy_pool.push_back(enemy_tracker[i]);
-		//borrar bullet
-		auto& j = enemy_tracker.begin() + i;
-		enemy_tracker.erase(j);
-
-	}
-	active_enemies = 0;
-	//borrar totes les bales
-	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
-		//save the bullet in the pool
-		bullet_pool.push_back(bullet_tracker[i]);
-		//borrar bullet
-		auto& j = bullet_tracker.begin() + i;
-		bullet_tracker.erase(j);
-
-	}
-	//borrar tots els power ups
-	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
-		//save the bullet in the pool
-		powerUp_pool.push_back(powerUp_tracker[i]);
-		//borrar bullet
-		auto& j = powerUp_tracker.begin() + i;
-		powerUp_tracker.erase(j);
-
-	}
-}
-
-void Player::be_attacked(std::vector<Enemy>& enemy_tracker) {
+void Player::be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, int& active_enemies, std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool, std::vector<PowerUp>& bullet_tracker, std::vector<PowerUp>& bullet_pool) {
 	bool already_damaged = false;
 	int i = 0;
 	while (!already_damaged && i < enemy_tracker.size()) {
@@ -110,7 +256,37 @@ void Player::be_attacked(std::vector<Enemy>& enemy_tracker) {
 			hp--;
 
 			//player death
-			die();
+			is_dying = true;
+			death_anim = 0;
+			PlaySound(player_death);
+			//borrar enemics
+			for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
+				//save the bullet in the pool
+				enemy_pool.push_back(enemy_tracker[i]);
+				//borrar bullet
+				auto& j = enemy_tracker.begin() + i;
+				enemy_tracker.erase(j);
+
+			}
+			active_enemies = 0;
+			//borrar totes les bales
+			for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
+				//save the bullet in the pool
+				bullet_pool.push_back(bullet_tracker[i]);
+				//borrar bullet
+				auto& j = bullet_tracker.begin() + i;
+				bullet_tracker.erase(j);
+
+			}
+			//borrar tots els power ups
+			for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
+				//save the bullet in the pool
+				powerUp_pool.push_back(powerUp_tracker[i]);
+				//borrar bullet
+				auto& j = powerUp_tracker.begin() + i;
+				powerUp_tracker.erase(j);
+
+			}
 
 			if (hp < 0) {
 				std::cout << "you are dead" << std::endl;
@@ -178,12 +354,12 @@ void Player::collide(std::vector<Obstacle>& obstacle_tracker) {
 }
 
 
-void collect() {
+void Player::collect(std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool, Sound power_up_pick_up, Sound coin_sound) {
 	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
-		if (CheckCollisionCircles({ player_pos.x + (player_size.x / 2), player_pos.y + (player_size.y / 2) }, player_size.x / 2, { powerUp_tracker[i].position.x + tile_size / 2, powerUp_tracker[i].position.y + tile_size / 2 }, tile_size / 4)) {
-			switch (powerUp_tracker[i].type) {
+		if (CheckCollisionCircles({ rec.x + (rec.width / 2), rec.y + (rec.height / 2) }, rec.width / 2, { powerUp_tracker[i].get_position().x + tile_size / 2, powerUp_tracker[i].get_position().y + tile_size / 2}, tile_size / 4)) {
+			switch (powerUp_tracker[i].get_type()) {
 			case 'U': //vida extra
-				lives++;
+				hp++;
 				PlaySound(power_up_pick_up);
 				break;
 			case 'O'://monedes
@@ -200,7 +376,7 @@ void collect() {
 	}
 }
 
-void Player::shoot_bullets(Sound shoot_fx) {
+void Player::shoot(Sound shoot_fx) {
 	shoot_dir = { 0, 0 };
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
@@ -245,7 +421,7 @@ void Player::shoot_bullets(Sound shoot_fx) {
 	//shoot_dir = { 0, 0 };
 }
 
-void Player::update_bullets() {
+void Player::bullet_update() {
 	//get the lenght of the bullet vector
 	//update bullet's position
 	for (int i = 0; i < bullet_tracker.size(); i++) {
@@ -269,6 +445,13 @@ void Player::update_bullets() {
 			bullet_tracker.erase(j);
 		}
 
+	}
+}
+
+void Player::bullet_draw(Texture2D bullet_player) {
+	int bullet_amount = bullet_tracker.size();
+	for (int i = 0; i < bullet_amount; i++) {
+		DrawTextureEx(bullet_player, bullet_tracker[i].get_position(), 0, tile_size / 16, WHITE);
 	}
 }
 

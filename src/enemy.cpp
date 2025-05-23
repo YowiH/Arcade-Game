@@ -11,3 +11,19 @@ Enemy::Enemy(Vector2 pos) : Walker(rec) {
 bool Enemy::get_right_foot() const {
 	return right_foot;
 }
+
+int Enemy::get_animation_counter() const {
+	return animation_counter;
+}
+
+void Enemy::add_animation_counter(int amount) {
+	animation_counter += amount;
+}
+
+void Enemy::set_animation_counter(int new_amount) {
+	animation_counter = new_amount;
+}
+
+void Enemy::set_right_foot(bool new_state) {
+	right_foot = new_state;
+}
