@@ -57,6 +57,10 @@ int fire_rate = 15;
 Vector2 Shoot_dir;
 int anim_dir; //variable to know what animation to play when shooting
 
+//power-ups
+char stored_power_up = ' ';   // UI slot content
+char active_power_up_type = ' '; // running power-up (e.g., 'D' for coffee)
+int power_up_timer = 0;
 
 //MAPS AND AREAS
 int level_count = 0;
@@ -247,7 +251,7 @@ Texture2D stone_floor;
 Texture2D tombstone;
 
 //power ups
-Texture2D coffe;
+Texture2D coffee;
 Texture2D coin;
 Texture2D coin_5;
 Texture2D extra_life;
@@ -263,6 +267,7 @@ Sound enemy_death;
 Sound power_up_pick_up;
 Sound coin_sound;
 Sound player_death;
+Sound pick_up_coffee;
 
 //music
 Music main_theme;
@@ -311,6 +316,7 @@ void LoadAssets() {
 	//POWER UPS
 	coin = LoadTexture("coin.png");
 	extra_life = LoadTexture("extra_life.png");
+	coffee = LoadTexture("coffe.png");
 
 	//SHOP
 	shop_keeper_spritesheet = LoadTexture("shop_keeper_spritesheet.png");
@@ -331,6 +337,7 @@ void LoadAssets() {
 	power_up_pick_up = LoadSound("power_up_pick_up.mp3");
 	coin_sound = LoadSound("coin.mp3");
 	player_death = LoadSound("death_player.mp3");
+	pick_up_coffee = LoadSound("pick_up_coffee.mp3");
 
 	//MUSIC
 	main_theme = LoadMusicStream("JOTPK_song.wav");
@@ -373,6 +380,7 @@ void UnloadGame() {
 	//power ups
 	UnloadTexture(coin);
 	UnloadTexture(extra_life);
+	UnloadTexture(coffee);
 
 	//shop
 	UnloadTexture(shop_keeper_spritesheet);
@@ -385,6 +393,7 @@ void UnloadGame() {
 	UnloadSound(shoot_fx);
 	UnloadSound(enemy_death);
 	UnloadSound(coin_sound);
+	UnloadSound(pick_up_coffee);
 
 	//music
 	UnloadMusicStream(main_theme);
@@ -791,13 +800,16 @@ void spawnPowerUp(float x, float y) {
 	randVal = GetRandomValue(1, 5);
 	if (randVal == 1) {
 		char C;
-		randVal = GetRandomValue(0, 1);
+		randVal = GetRandomValue(0, 2);
 		switch (randVal) {
 		case 0: //extra life
 			C = 'U';
 			break;
 		case 1: //coin
 			C = 'O';
+			break;
+		case 2: //coffee
+			C = 'D'; 
 			break;
 		default:
 			cout << "type of power up not recognised" << endl;
@@ -905,6 +917,18 @@ void player_powerUpColl() {
 				coins++;
 				PlaySound(coin_sound);
 				break;
+			case 'D': //coffee
+				PlaySound(pick_up_coffee);
+				if (stored_power_up == ' ') stored_power_up = 'D';
+				else {
+					// If slot already has something, auto-activate new one
+					if (power_up_timer <= 0) {
+						active_power_up_type = 'D';
+						power_up_timer = 16 * 60;
+						player_Speed += 0.5f;
+					}
+				}
+				break;
 			}
 			//guardar power up al pool
 			powerUp_pool.push_back(powerUp_tracker[i]);
@@ -913,6 +937,30 @@ void player_powerUpColl() {
 			powerUp_tracker.erase(k);
 		}
 	}
+}
+
+void runPowerUp() {
+	// Activate stored power-up on spacebar
+	if (IsKeyPressed(KEY_SPACE) && stored_power_up != ' ' && power_up_timer <= 0) {
+		active_power_up_type = stored_power_up;
+		stored_power_up = ' ';
+		if (active_power_up_type == 'D') {
+			player_Speed += 0.5f;
+			power_up_timer = 16 * 60;
+		}
+	}
+
+	// Tick active power-up
+	if (power_up_timer > 0) {
+		power_up_timer--;
+		// Auto-end after timer or when level ends 
+		if (power_up_timer <= 0 || (active_enemies == 0 && frames_since_level_start >= level_length) || shop_active ) {
+			if (active_power_up_type == 'D') player_Speed -= 0.5f;
+			active_power_up_type = ' ';
+			power_up_timer = 0;
+		}
+	}
+
 }
 
 void updateDeathAnimations() {
@@ -1119,7 +1167,7 @@ void ApplyItemEffect(int id) {
 		}
 		break;
 
-	case 2: // Backpack
+	case 2: // Backpack/ammunition
 		int stage = (level_count >= 7 ? 2 : level_count >= 5 ? 1 : 0);
 		if (backpack_upgrade_level < stage + 1) {
 			damage += 1;
@@ -1245,6 +1293,8 @@ void UpdateGame() {//update variables and positions
 
 			//player power-up colisions
 			player_powerUpColl();
+
+			runPowerUp();
 
 			if (frames_since_level_start >= level_length && active_enemies <= 0 && !shop_active &&
 				last_shop_level != level_count &&
@@ -1444,6 +1494,11 @@ void DrawUI() {
 	//draw power up slot
 	DrawTextureEx(power_up_slot, { tile_size, tile_size}, 0, (tile_size / 16) * 1.25, WHITE);
 
+	//power-ups
+	if (stored_power_up == 'D') {
+		DrawTextureEx(coffee, { tile_size * 1.2f, tile_size * 1.2f }, 0, (tile_size / 16) * 1.25, WHITE);
+	}
+
 	//draw level bar
 	int leangth = area_size - (area_size * (frames_since_level_start / level_length));
 	DrawRectangle(tile_size * 4, tile_size * 0.45, leangth, tile_size * 0.4, GREEN);
@@ -1518,6 +1573,9 @@ void drawPowerUps() {
 			break;
 		case 'O':
 			DrawTextureEx(coin, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
+			break;
+		case 'D':
+			DrawTextureEx(coffee, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
 			break;
 		default:
 			cout << "power up not recognized (drawing)" << endl;
