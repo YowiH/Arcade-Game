@@ -29,6 +29,7 @@ float frames_since_level_start = 0;
  static float zoom = 0.01f * (tile_size / 16);
  static bool zoom_completed = false;
  static float zoom_speed = 0.005f * (tile_size / 16);
+ Font font;
 
 //game over screen variables
 //int selected_option = 0;
@@ -45,7 +46,7 @@ int player_death_anim = 0;
 bool player_right_foot;
 bool player_dying;
 int lives = 3;
-int coins = 100;
+int coins = 1;
 int damage = 1;
 bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
 
@@ -58,7 +59,7 @@ int anim_dir; //variable to know what animation to play when shooting
 
 //MAPS AND AREAS
 Map active_map;
-int level_count = 1;
+int level_count = 0;
 int powerUp_lifespan = 600;
 bool obstacles_positioned = false;
 
@@ -66,15 +67,27 @@ bool obstacles_positioned = false;
 bool shop_active = false;
 bool shop_item_bought = false;
 int shop_phase = 0; // 0 = inactive, 1 = entering, 2 = idle/shop, 3 = exiting
-float shop_timer = 0; // for timing entry/exit animations
 int shopkeeper_frame = 0;
 Vector2 shopkeeper_pos = { (area_size / 2) + left_margin, tile_size };
-Vector2 shopkeeper_dest = { (area_size / 2) + left_margin, area_size };
 Texture2D item_sprites[3]; // 0 = boot, 1 = gun, 2 = backpack/ammo
-int player_held_item = -1; // for hold-up animation, -1 if none
 float hold_up_timer = 0;
+int last_shop_level = -1;
+bool backpack_bought[3] = { false, false, false };
+int backpack_level = 0;
+int gun_level = 0;
+int item_being_held_up = -1;  // -1 = none
+bool boot_bought = false;
+int gun_upgrade_level = -1;       // -1 means not bought yet
+int backpack_upgrade_level = -1;  // -1 means not bought yet
 
+struct ShopItem {
+	Texture2D tex;
+	int index;
+	Vector2 pos;
+	int cost;
+};
 
+ShopItem items[3];
 
 enum stage {
 	DESERT,
@@ -147,15 +160,6 @@ struct death_anim {
 	int frameCounter = 0;
 };
 
-//shop items
-struct ShopItem {
-	Vector2 position;
-	int cost;
-	char type;
-};
-
-//shop vector
-std::vector<ShopItem> current_shop_items;
 
 //bullet vectors
 std::vector<bullet> bullet_tracker{};
@@ -1004,143 +1008,168 @@ void changeLevel() {
 }
 
 //SHOP
+
 void StartShop() {
 	shop_active = true;
 	shop_item_bought = false;
 	shop_phase = 1;
-	shop_timer = 0;
 	shopkeeper_pos = { (area_size / 2) + left_margin, tile_size };
 }
 
-Font font;
 void DrawShopkeeper() {
+	Vector2 shopkeeper_dest = { (area_size / 2) + left_margin, area_size };
 	Rectangle shopkeeper_src = { 16 * shopkeeper_frame, 0, 16, 16 };
 	DrawTexturePro(shop_keeper_spritesheet, shopkeeper_src,
 		{ shopkeeper_pos.x, shopkeeper_pos.y, tile_size, tile_size },
 		{ 0, 0 }, 0, WHITE);
 }
 
-
-void DrawShopUI(Font font) {
-	Vector2 shop_ui_pos = { shopkeeper_pos.x - 35, area_size/3 + tile_size };
-
-	Rectangle src = { 0, 0, 64, 32 }; //its giving me bad things when i use tile_size
-	Rectangle dest = { shop_ui_pos.x, shop_ui_pos.y, tile_size * 4, tile_size * 2 };
-	Vector2 origin = { 0, 0 };
-	DrawTexturePro(shop_blanket, src, dest, origin, 0.0f, WHITE);
-
-	int shop_index = level_count / 2 - 1;
-
-	struct Item {
-		Vector2 pos;
-		int cost;
-		Texture2D tex;
-		int index;
-		char type; // 'B', 'G', 'P'
-	};
-
-	Item items[3];
-
-	// Boot
-	items[0].pos = { shop_ui_pos.x + tile_size * 0.55f, shop_ui_pos.y + tile_size * 0.25f };
-	items[0].cost = 1;
-	items[0].tex = boots;
-	items[0].index = (shop_index == 0) ? 0 : 1; // 2 versions only
-	items[0].type = 'B';
-
-	// Gun
-	items[1].pos = { shop_ui_pos.x + tile_size * 1.65f, shop_ui_pos.y + tile_size * 0.25f };
-	items[1].cost = (shop_index < 2) ? 10 : 20;
-	items[1].tex = guns;
-	items[1].index = shop_index; // 0,1,2
-	items[1].type = 'G';
-
-	// Backpack
-	items[2].pos = { shop_ui_pos.x + tile_size * 2.8f, shop_ui_pos.y + tile_size * 0.25f };
-	items[2].cost = (shop_index == 0) ? 15 : (shop_index == 1 ? 15 : (shop_index == 2 ? 30 : 45));
-	items[2].tex = ammunition;
-	items[2].index = shop_index; // 0–2
-	items[2].type = 'P';
-
-	for (int i = 0; i < 3; i++) {
-		Rectangle src = { 16 * items[i].index, 0, 16, 16 }; 
-		Rectangle dest = { items[i].pos.x, items[i].pos.y, tile_size, tile_size  }; // scale by 1.5x
-		Vector2 origin = { 0, 0 };
-		DrawTexturePro(items[i].tex, src, dest, origin, 0.0f, WHITE);
-
-		// Draw coin cost below the item
-		DrawTextEx(font,TextFormat("%i", items[i].cost),
-			{ items[i].pos.x + 3, items[i].pos.y + tile_size +2 },
-			tile_size / 2, 1, BLACK);
-	}
-
-	//THIS DOESNT WORK!!
-	if (player_held_item >= 0) {
-		Texture2D tex = items[player_held_item].tex;
-		int index = items[player_held_item].index;
-		Rectangle src = { 16 * index, 0, 16, 16 };
-		Rectangle dest = { 10, area_size + 10, tile_size * 0.5f, tile_size * 0.5f };
-		DrawTexturePro(tex, src, dest, { 0, 0 }, 0.0f, WHITE);
-	}
-
-
-}
-
-bool upgrades_bought[3] = { false, false, false };
-int backpack_level = 0;
-int gun_level = 0;
-
-bool CanBuyItem(int id) {
-	if (id == 0) return !upgrades_bought[0];
-	return true;
-}
-
 int GetItemCost(int id) {
 	if (level_count == 2) return (id == 0 ? 8 : id == 1 ? 10 : 15);
-	if (level_count == 4) return (id == 0 ? 8 : id == 1 ? 10 : 15);
+	if (level_count == 4) return (id == 0 ? 8 : id == 1 ? 20 : 15);
 	if (level_count == 6) return (id == 0 ? 8 : id == 1 ? 20 : 30);
 	if (level_count == 8) return (id == 0 ? 8 : id == 1 ? 20 : 45);
 	return 999;
 }
 
+void DrawShopUI() {
+
+	Vector2 ui_pos = { (area_size / 2) + left_margin, (area_size / 3) + tile_size };
+
+	for (int i = 0; i < 3; i++) {
+		Texture2D tex;
+		int index = 0;
+
+		switch (i) {
+		case 0: // Boots
+			tex = boots;
+			index = 0;
+			break;
+
+		case 1: // Gun
+			tex = guns;
+			if (level_count <= 2) index = 0;
+			else index = 1;
+			break;
+
+		case 2: // Backpack
+			tex = ammunition;
+			if (level_count < 6) index = 0;
+			else if (level_count < 8) index = 1;
+			else index = 2;
+			break;
+		}
+
+		items[i] = {
+			tex,
+			index,
+			{ ui_pos.x + tile_size * i * 1.25f, ui_pos.y + (tile_size / 4) },
+			GetItemCost(i)
+		};
+	}
+
+	if (!shop_item_bought) {
+
+		Rectangle src = { 0, 0, 64, 32 };
+		Rectangle dest = { ui_pos.x - tile_size, ui_pos.y, tile_size * 4, tile_size * 2 };
+		DrawTexturePro(shop_blanket, src, dest, { 0, 0 }, 0.0f, WHITE);
+
+		// Draw each item
+		for (int i = 0; i < 3; i++) {
+			Rectangle src = { 16.0f * items[i].index, 0, 16, 16 };
+			Rectangle dst = { items[i].pos.x - tile_size/1.4, items[i].pos.y - tile_size/4, tile_size, tile_size };
+			DrawTexturePro(items[i].tex, src, dst, { 0, 0 }, 0, WHITE);
+
+			// Cost text
+			DrawTextEx(font, TextFormat("%i", items[i].cost),
+				{ items[i].pos.x - tile_size / 1.8f, items[i].pos.y + tile_size*0.75f },
+				10 * (tile_size / 16), 1, BLACK);
+
+		}
+	}
+	if (item_being_held_up >= 0 && item_being_held_up < 3 && shop_phase == 3) {
+		Texture2D tex = items[item_being_held_up].tex;
+		int index = items[item_being_held_up].index;
+		Rectangle src = { 16.0f * (index), 0, 16, 16 };
+		Rectangle dest = { player_pos.x, player_pos.y - tile_size, tile_size, tile_size };
+		DrawTexturePro(tex, src, dest, { 0, 0 }, 0.0f, WHITE);
+	}
+
+	if (items[item_being_held_up].cost == 8 && items[item_being_held_up].index == 0) { //boots
+		boot_bought = true;
+	}
+	else if ((items[item_being_held_up].cost == 10 || items[item_being_held_up].cost == 20) && items[item_being_held_up].index <= 2) {
+		if (items[item_being_held_up].index > gun_upgrade_level) gun_upgrade_level = items[item_being_held_up].index;
+	}
+	//this code is so dumb but i couldn't think of doing it another way
+	else if ((items[item_being_held_up].cost == 15 || items[item_being_held_up].cost == 30 || items[item_being_held_up].cost == 45) && items[item_being_held_up].index >= 0) {
+		if (items[item_being_held_up].index > backpack_upgrade_level) backpack_upgrade_level = items[item_being_held_up].index;
+	}
+
+}
+
+bool CanBuyItem(int id) {
+	if (id == 0) return !boot_bought; // boot
+	if (id == 1) {
+		if (level_count == 2) return gun_upgrade_level < 1;
+		else return gun_upgrade_level < 2;
+	}      // gun
+	if (id == 2) {                            // backpack (per stage)
+		int stage = (level_count >= 8 ? 2 : level_count >= 6 ? 1 : 0);
+		return !backpack_bought[stage];
+	}
+	return false;
+}
+
 void ApplyItemEffect(int id) {
 	switch (id) {
-	case 0: // boot
+	case 0: // Boots
 		player_Speed += 0.5f;
-		upgrades_bought[0] = true;
+		boot_bought = true;
 		break;
-	case 1: // gun
-		fire_rate -= (gun_level == 0 ? 2 : 1);
-		gun_level++;
+
+	case 1: // Gun
+		if (level_count == 2 && gun_upgrade_level < 1) {
+			fire_rate -= 2;
+			gun_upgrade_level = 1;
+		}
+		else if (level_count > 2 && gun_upgrade_level < 2) {
+			fire_rate -= 1;
+			gun_upgrade_level = 2;
+		}
 		break;
-	case 2: // backpack
-		damage += 1;
-		backpack_level++;
+
+	case 2: // Backpack
+		int stage = (level_count >= 8 ? 2 : level_count >= 6 ? 1 : 0);
+		if (backpack_upgrade_level < stage + 1) {
+			damage += 1;
+			backpack_upgrade_level = stage + 1;
+		}
 		break;
 	}
 }
+
 
 void HandleShopPurchase() {
 	Vector2 ui_pos = { (area_size / 2) + left_margin - tile_size * 2, area_size - tile_size * 4 };
 	for (int i = 0; i < 3; i++) {
 
-		float item_x = ui_pos.x + tile_size * i + tile_size / 2;
-		float item_y = ui_pos.y + tile_size;
-
-		float scale = 1.5f;
-		float radius = (tile_size * scale) / 2.0f;
+		Vector2 item_center = {
+			items[i].pos.x + (tile_size / 4) - tile_size / 1.4,
+			items[i].pos.y + (tile_size / 2) - tile_size / 4
+		};
 
 		if (CheckCollisionCircles(
 			{ player_pos.x + (player_size.x / 2), player_pos.y + (player_size.y / 2) },
 			player_size.x / 2,
-			{ item_x + (tile_size / 2), item_y + (tile_size / 2) },
-			tile_size / 2)){
+			{ item_center.x + (tile_size / 2), item_center.y + (tile_size / 2) },
+			tile_size / 4)){
 
 			int cost = GetItemCost(i);
 			if (coins >= cost && CanBuyItem(i)) {
 				coins -= cost;
 				ApplyItemEffect(i);
-				player_held_item = i;
+				item_being_held_up = i;
 				shop_item_bought = true;
 				break;
 			}
@@ -1150,6 +1179,12 @@ void HandleShopPurchase() {
 
 void UpdateShop() {
 	float speed = area_size / 600.0f; // ~2 seconds to center
+	float shop_timer = 0; // for timing entry/exit animations
+	if (shop_phase == 0 && shop_active && last_shop_level == level_count) {
+		// prevent repeat on same level
+		shop_active = false;
+		return;
+	}
 	if (shop_phase == 1) { // entering
 		shopkeeper_pos.y += speed;
 		shop_timer += GetFrameTime();
@@ -1158,9 +1193,11 @@ void UpdateShop() {
 		if (shopkeeper_pos.y >= area_size/3) {
 			shopkeeper_pos.y = area_size/3;
 			shop_phase = 2;
+			last_shop_level = level_count;
 		}
 	}
 	else if (shop_phase == 2) { // idle/shop active
+		shopkeeper_frame = 2;
 		HandleShopPurchase(); // allows item collision
 		if (shop_item_bought) {
 			shop_phase = 3;
@@ -1172,16 +1209,18 @@ void UpdateShop() {
 		shop_timer += GetFrameTime();
 		hold_up_timer -= GetFrameTime();
 		if (hold_up_timer <= 0) {
+			item_being_held_up = -1;
 			shopkeeper_pos.y -= speed;
 			if ((int)(shopkeeper_pos.y / tile_size * 3) % 2 == 0) shopkeeper_frame = 0;
 			else shopkeeper_frame = 1;
 			if (shopkeeper_pos.y <= tile_size) {
 				shop_active = false;
 				shop_phase = 0;
-				player_held_item = -1;
 			}
 		}
 	}
+
+
 } 
 
 //UPDATE GAME
@@ -1227,19 +1266,22 @@ void UpdateGame() {//update variables and positions
 			//player power-up colisions
 			player_powerUpColl();
 
-			if (frames_since_level_start >= level_length && active_enemies <= 0 && !shop_active) {
+			if (frames_since_level_start >= level_length && active_enemies <= 0 && !shop_active &&
+				last_shop_level != level_count &&
+				(level_count == 2 || level_count == 4 || level_count == 6 || level_count == 8)) {
 				StartShop();
 			}
 
 
 			if (shop_active) {
 				DrawShopkeeper();
-				DrawShopUI(font);
+				DrawShopUI();
 				UpdateShop();
 			}
 
-			changeLevel();
-			
+			if (!shop_active) {
+				changeLevel();
+			}
 		
 		}
 
@@ -1272,6 +1314,16 @@ void positionObsticle(float posX, float posY) {
 
 //DRAW
 void DrawPlayer() {
+	//shop animation
+	if (shop_phase == 3 && item_being_held_up != -1) {
+		
+		Rectangle holding_src = { 16, 0, 16, 16 }; 
+		Rectangle holding_dest = { player_pos.x, player_pos.y, player_size.x, player_size.y };
+		DrawTexturePro(player_character_spritesheet, holding_src, holding_dest, { 0, 0 }, 0, WHITE);
+
+		return;
+	}
+
 	if (anim_dir != 0) {//esta disparant
 		if (Mov_dir != 0) { //s'esta movent
 			switch (anim_dir) {
@@ -1553,6 +1605,26 @@ void DrawUI() {
 	//draw level bar
 	int leangth = area_size - (area_size * (frames_since_level_start / level_length));
 	DrawRectangle(tile_size * 4, tile_size * 0.45, leangth, tile_size * 0.4, GREEN);
+
+	//draw upgrades in bottom corner
+	if (boot_bought) {
+		Rectangle src = { 0, 0, 16, 16 }; // Boot image never changes
+		DrawTexturePro(boots, src, { left_margin - tile_size, area_size - (tile_size*2), 16*2, 16*2 }, { 0, 0 }, 0, WHITE);
+	}
+
+	// 2. Gun (if bought)
+	if (gun_upgrade_level >= 0) {
+		int index = items[item_being_held_up].index; 
+		Rectangle src = { 16.0f * (index), 0, 16, 16 };
+		DrawTexturePro(guns, src, { left_margin - tile_size, area_size - tile_size, 16*2, 16*2 }, { 0, 0 }, 0, WHITE);
+	}
+
+	// 3. Backpack (if any ammo level bought)
+	if (backpack_upgrade_level >= 0) {
+		int index = items[item_being_held_up].index; 
+		Rectangle src = { 16.0f * (index), 0, 16, 16 };
+		DrawTexturePro(ammunition, src, { left_margin - tile_size, area_size, 16 *2 , 16 *2  }, { 0, 0 }, 0, WHITE);
+	}
 }
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
@@ -1658,7 +1730,7 @@ void DrawGame() {//draws the game every frame
 		if (shop_active) {
 			DrawShopkeeper(); // always draw the shopkeeper if shop is active
 			if (shop_phase == 2 || shop_phase == 3) {
-				DrawShopUI(font); // only draw shop UI after shopkeeper reaches center
+				DrawShopUI(); // only draw shop UI after shopkeeper animation
 			}
 		}
 
