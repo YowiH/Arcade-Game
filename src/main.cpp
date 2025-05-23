@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include "Map.h"
+#include "obstacle.h"
 
 using namespace std;
 
@@ -46,7 +47,7 @@ int player_death_anim = 0;
 bool player_right_foot;
 bool player_dying;
 int lives = 3;
-int coins = 1;
+int coins = 100;
 int damage = 1;
 bool xPosBlock = false, xNegBlock = false, yPosBlock = false, yNegBlock = false;
 
@@ -58,7 +59,6 @@ int anim_dir; //variable to know what animation to play when shooting
 
 
 //MAPS AND AREAS
-Map active_map;
 int level_count = 0;
 int powerUp_lifespan = 600;
 bool obstacles_positioned = false;
@@ -88,12 +88,6 @@ struct ShopItem {
 };
 
 ShopItem items[3];
-
-enum stage {
-	DESERT,
-	FOREST
-};
-stage actual_stage;
 
 //ENEMY SPAWNING VARIABLES
 int active_enemies, max_active_enemies = 5;
@@ -150,11 +144,6 @@ struct trial_obs {
 	Color color;
 };
 
-struct Obsticle {
-	Rectangle rec;
-};
-struct trial_obs tri;
-
 struct death_anim {
 	Vector2 position;
 	int frameCounter = 0;
@@ -170,8 +159,8 @@ std::vector<enemy> enemy_tracker{};
 std::vector<enemy> enemy_pool{};
 
 //obstacle vector
-std::vector<Obsticle> obsticle_tracker{};
-std::vector<Obsticle> obsticle_pool{};
+std::vector<Obstacle> obstacle_tracker{};
+std::vector<Obstacle> obstacle_pool{};
 
 //power up vector
 
@@ -279,6 +268,8 @@ Sound player_death;
 Music main_theme;
 
 //DATA MANAGEMENT
+std::vector<Texture2D>desert_textures{};
+std::vector<Texture2D>forest_textures{};
 
 void LoadAssets() {
 
@@ -344,6 +335,8 @@ void LoadAssets() {
 	//MUSIC
 	main_theme = LoadMusicStream("JOTPK_song.wav");
 
+	desert_textures = { dirt, dirt_grass, dirt_stones, path_stones, path, bush_spritesheet, logs, river_desert1, river_desert2, bridge };
+	forest_textures = { grass, flowers_grass, tall_grass, path_grass, path_grass2, green_bush_spritesheet, stump, river_forest1, river_forest2, bridge };
 }
 
 void UnloadGame() {
@@ -407,11 +400,8 @@ void InitGame() {
 	zoom_completed = false;
 	lives = 3;
 	player_pos = { left_margin + (area_size / 2), tile_size + (area_size * 3 / 4)};
-	actual_stage = DESERT;
 	InitAudioDevice();
 	LoadAssets();
-	active_map = map_list[level_count];
-	level_count++;
 	//start playing music
 	PlayMusicStream(main_theme);
 }
@@ -787,12 +777,12 @@ void restrainPlayerMovement(float x, float y) {
 
 }
 
-void player_obsticleColl() {
-	//check all obsticle colliders
+void player_obstacleColl() {
+	//check all obstacle colliders
 	Rectangle rec_player = { player_pos.x, player_pos.y, tile_size, tile_size };
-	for (int i = 0; i < obsticle_tracker.size(); i++) {
-		if (CheckCollisionRecs(rec_player, obsticle_tracker[i].rec)) {
-			restrainPlayerMovement(obsticle_tracker[i].rec.x, obsticle_tracker[i].rec.y);
+	for (int i = 0; i < obstacle_tracker.size(); i++) {
+		if (CheckCollisionRecs(rec_player, obstacle_tracker[i].get_rec())) {
+			restrainPlayerMovement(obstacle_tracker[i].get_rec().x, obstacle_tracker[i].get_rec().y);
 		}
 	}
 }
@@ -888,11 +878,11 @@ void bullet_enemyColl() { //bug here?
 	}
 }
 
-void bullet_obsticleColl() { //bug here?
-	for (int j = 0; j < obsticle_tracker.size(); j++) {
+void bullet_obstacleColl() { //bug here?
+	for (int j = 0; j < obstacle_tracker.size(); j++) {
 		for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
 
-			if (CheckCollisionCircles({ bullet_tracker[i].position.x + tile_size/2, bullet_tracker[i].position.y + tile_size / 2 }, tile_size / 8, { obsticle_tracker[j].rec.x + tile_size / 2, obsticle_tracker[j].rec.y + tile_size / 2 }, tile_size / 2)) {
+			if (CheckCollisionCircles({ bullet_tracker[i].position.x + tile_size/2, bullet_tracker[i].position.y + tile_size / 2 }, tile_size / 8, { obstacle_tracker[j].get_rec().x + tile_size / 2, obstacle_tracker[j].get_rec().y + tile_size / 2}, tile_size / 2)) {
 				//save the bullet in the pool
 				bullet_pool.push_back(bullet_tracker[i]);
 				//borrar bullet
@@ -983,26 +973,16 @@ void animationManager() {
 
 void changeLevel() {
 	if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
+		shop_active = false;
 		frames_since_level_start = 0;
 		//delete all obstacles
-		obsticle_tracker.clear();
+		obstacle_tracker.clear();
 		obstacles_positioned = false;
-		if (level_count < map_list.size()) {//adds one to the index of the map vector
-			active_map = map_list[level_count];
+		if (level_count +1 < map_list.size()) {//adds one to the index of the map vector
 			level_count++;
 		}
 		else {//repeats to the first level if player is on the last
 			level_count = 0;
-			active_map = map_list[level_count];
-			level_count++;
-		}
-		switch (active_map.getS()) {
-		case 'D':
-			actual_stage = DESERT;
-			break;
-		case 'F':
-			actual_stage = FOREST;
-			break;
 		}
 	}
 }
@@ -1025,10 +1005,10 @@ void DrawShopkeeper() {
 }
 
 int GetItemCost(int id) {
-	if (level_count == 2) return (id == 0 ? 8 : id == 1 ? 10 : 15);
-	if (level_count == 4) return (id == 0 ? 8 : id == 1 ? 20 : 15);
-	if (level_count == 6) return (id == 0 ? 8 : id == 1 ? 20 : 30);
-	if (level_count == 8) return (id == 0 ? 8 : id == 1 ? 20 : 45);
+	if (level_count == 1) return (id == 0 ? 8 : id == 1 ? 10 : 15);
+	if (level_count == 3) return (id == 0 ? 8 : id == 1 ? 20 : 15);
+	if (level_count == 5) return (id == 0 ? 8 : id == 1 ? 20 : 30);
+	if (level_count == 7) return (id == 0 ? 8 : id == 1 ? 20 : 45);
 	return 999;
 }
 
@@ -1048,14 +1028,14 @@ void DrawShopUI() {
 
 		case 1: // Gun
 			tex = guns;
-			if (level_count <= 2) index = 0;
+			if (level_count <= 1) index = 0;
 			else index = 1;
 			break;
 
 		case 2: // Backpack
 			tex = ammunition;
-			if (level_count < 6) index = 0;
-			else if (level_count < 8) index = 1;
+			if (level_count < 5) index = 0;
+			else if (level_count < 7) index = 1;
 			else index = 2;
 			break;
 		}
@@ -1111,11 +1091,11 @@ void DrawShopUI() {
 bool CanBuyItem(int id) {
 	if (id == 0) return !boot_bought; // boot
 	if (id == 1) {
-		if (level_count == 2) return gun_upgrade_level < 1;
+		if (level_count == 1) return gun_upgrade_level < 1;
 		else return gun_upgrade_level < 2;
 	}      // gun
 	if (id == 2) {                            // backpack (per stage)
-		int stage = (level_count >= 8 ? 2 : level_count >= 6 ? 1 : 0);
+		int stage = (level_count >= 7 ? 2 : level_count >= 5 ? 1 : 0);
 		return !backpack_bought[stage];
 	}
 	return false;
@@ -1129,18 +1109,18 @@ void ApplyItemEffect(int id) {
 		break;
 
 	case 1: // Gun
-		if (level_count == 2 && gun_upgrade_level < 1) {
+		if (level_count == 1 && gun_upgrade_level < 1) {
 			fire_rate -= 2;
 			gun_upgrade_level = 1;
 		}
-		else if (level_count > 2 && gun_upgrade_level < 2) {
+		else if (level_count > 1 && gun_upgrade_level < 2) {
 			fire_rate -= 1;
 			gun_upgrade_level = 2;
 		}
 		break;
 
 	case 2: // Backpack
-		int stage = (level_count >= 8 ? 2 : level_count >= 6 ? 1 : 0);
+		int stage = (level_count >= 7 ? 2 : level_count >= 5 ? 1 : 0);
 		if (backpack_upgrade_level < stage + 1) {
 			damage += 1;
 			backpack_upgrade_level = stage + 1;
@@ -1255,20 +1235,20 @@ void UpdateGame() {//update variables and positions
 			player_enemyColl();
 
 			//player-obstacles
-			player_obsticleColl();
+			player_obstacleColl();
 
 			//bullet-enemies
 			bullet_enemyColl();
 
 			//bullets-obstacles
-			bullet_obsticleColl();
+			bullet_obstacleColl();
 
 			//player power-up colisions
 			player_powerUpColl();
 
 			if (frames_since_level_start >= level_length && active_enemies <= 0 && !shop_active &&
 				last_shop_level != level_count &&
-				(level_count == 2 || level_count == 4 || level_count == 6 || level_count == 8)) {
+				(level_count == 1 || level_count == 3 || level_count == 5 || level_count == 7)) {
 				StartShop();
 			}
 
@@ -1279,9 +1259,7 @@ void UpdateGame() {//update variables and positions
 				UpdateShop();
 			}
 
-			if (!shop_active) {
-				changeLevel();
-			}
+			changeLevel();
 		
 		}
 
@@ -1302,16 +1280,6 @@ void UpdateGame() {//update variables and positions
 	
 }
 
-
-void positionObsticle(float posX, float posY) {
-	if (obsticle_pool.empty()) {
-		Obsticle obs;
-		obs.rec = {posX, posY, tile_size, tile_size};
-		obsticle_tracker.push_back(obs);
-	}
-	//afegir codi de bullet pool
-}
-
 //DRAW
 void DrawPlayer() {
 	//shop animation
@@ -1320,7 +1288,6 @@ void DrawPlayer() {
 		Rectangle holding_src = { 16, 0, 16, 16 }; 
 		Rectangle holding_dest = { player_pos.x, player_pos.y, player_size.x, player_size.y };
 		DrawTexturePro(player_character_spritesheet, holding_src, holding_dest, { 0, 0 }, 0, WHITE);
-
 		return;
 	}
 
@@ -1459,132 +1426,7 @@ void DrawPlayerDeath() {
 	}
 	//DrawTexturePro(player_character_death, src, { player_pos.x, player_pos.y, tile_size, tile_size }, { 0,0 }, 0, WHITE);
 }
-void DrawMap(){
-	int k = 0;
 
-	if (bush_frame == 0) {
-		src = { 0.0f, 0.0f, 16.0f, 16.0f };
-	}
-	else {
-		src = { 17.0f, 0.0f, 16.0f, 16.0f };
-	}
-	switch (actual_stage) {
-	case DESERT:
-		for (int i = 0; i < 16; i++) {
-			for (int j = 0; j < 16; j++) {
-				switch (active_map.getStr()[k]) {
-				case 'D':
-					DrawTextureEx(dirt, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'M':
-					DrawTextureEx(dirt_grass, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'S':
-					DrawTextureEx(dirt_stones, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'N':
-					DrawTextureEx(path_stones, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'P':
-					DrawTextureEx(path, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'B':
-					DrawTexturePro(bush_spritesheet, src, { tile_size * j + (left_margin), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
-					break;
-				case 'V':
-					DrawTexturePro(bush_spritesheet, src, { tile_size * j + (left_margin), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'O':
-					DrawTextureEx(logs, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'R':
-					DrawTextureEx(river_desert1, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'T':
-					DrawTextureEx(river_desert2, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'I':
-					DrawTextureEx(bridge, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				default:
-					break;
-				}
-				k++;
-			}
-		}
-		break;
-	case FOREST:
-		for (int i = 0; i < 16; i++) {
-			for (int j = 0; j < 16; j++) {
-				switch (active_map.getStr()[k]) {
-				case 'D':
-					DrawTextureEx(grass, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'M':
-					DrawTextureEx(flowers_grass, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'S':
-					DrawTextureEx(tall_grass, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'P':
-					DrawTextureEx(path_grass, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'N':
-					DrawTextureEx(path_grass2, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				case 'B':
-					DrawTexturePro(green_bush_spritesheet, src, { tile_size * j + (left_margin), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
-					break;
-				case 'V':
-					DrawTexturePro(green_bush_spritesheet, src, { tile_size * j + (left_margin), tile_size * i + tile_size , tile_size, tile_size }, { 0,0 }, 0, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'O':
-					DrawTextureEx(stump, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'R':
-					DrawTextureEx(river_forest1, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'T':
-					DrawTextureEx(river_forest2, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					if (!obstacles_positioned) {
-						positionObsticle(tile_size * j + (left_margin), tile_size * i + tile_size);
-					}
-					break;
-				case 'I':
-					DrawTextureEx(bridge, { tile_size * j + (left_margin), tile_size * i + tile_size }, 0, tile_size / 16, WHITE);
-					break;
-				default:
-					break;
-				}
-				k++;
-			}
-		}
-		break;
-	}
-	
-	obstacles_positioned = true;
-}
 void DrawUI() {
 	//draw clock
 	DrawTextureEx(timer, { left_margin, 0 }, 0, tile_size / 16, WHITE);
@@ -1717,8 +1559,7 @@ void DrawGame() {//draws the game every frame
 		//draw background
 		ClearBackground(BLACK);
 
-		//draw map
-		DrawMap();
+		map_list[level_count].draw(tile_size, left_margin, bush_frame, obstacles_positioned, obstacle_pool, obstacle_tracker, desert_textures, forest_textures);
 
 		//draw enmie death animation
 		DrawDeathAnimations();
