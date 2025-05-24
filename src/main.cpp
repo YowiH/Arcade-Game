@@ -82,12 +82,6 @@ public:
 class Bullet : GameObject {
 	int damage;
 };
-class Enemy : GameObject {
-	int hp;
-};
-class orc : Enemy {
-
-};
 
 struct bullet {
 	int speed = 5;
@@ -96,13 +90,14 @@ struct bullet {
 	int damage;
 };
 
-struct enemy {
-	float speed = 1.25;
+struct Enemy {
+	float speed;
 	Vector2 velocity;
 	Vector2 position;
 	int hp;
 	int anim_counter = 0;
 	bool right_foot;
+	char type; // 'O' for orc, 'G' for ogre, 'M' for mushroom
 };
 
 struct powerUp {
@@ -127,8 +122,8 @@ std::vector<bullet> bullet_tracker{};
 std::vector<bullet> bullet_pool{};
 
 //enemy vectors
-std::vector<enemy> enemy_tracker{};
-std::vector<enemy> enemy_pool{};
+std::vector<Enemy> enemy_tracker{};
+std::vector<Enemy> enemy_pool{};
 
 //obstacle vector
 std::vector<Obstacle> obstacle_tracker{};
@@ -157,7 +152,7 @@ Texture2D bullet_player;
 
 //enemies
 Texture2D orc_spritesheet;
-Texture2D troll_spritesheet;
+Texture2D ogre_spritesheet;
 Texture2D spyke_ball_spritesheet;
 Texture2D mushroom_spritesheet;
 Texture2D butterfly_spritesheet;
@@ -174,7 +169,7 @@ Texture2D damaged_cowboy;
 Texture2D damaged_imp;
 Texture2D damaged_mummie;
 Texture2D damaged_mushroom;
-Texture2D damaged_troll;
+Texture2D damaged_ogre;
 Texture2D damaged_spyke_ball;
 Texture2D death_animation_dungeon;
 Texture2D death_animation_enemy;
@@ -285,6 +280,8 @@ void LoadAssets() {
 
 	//ENEMIES
 	orc_spritesheet = LoadTexture("orc_spritesheet.png");
+	ogre_spritesheet = LoadTexture("ogre_spritesheet.png");
+	mushroom_spritesheet = LoadTexture("mushroom_spritesheet.png");
 
 	//DAMAGE & DEATH ANIMATIONS
 	death_animation_enemy = LoadTexture("death_animation_enemy.png");
@@ -521,14 +518,45 @@ void createEnemies() {
 			cout << "the random value has a wrong value" << endl;
 		}
 		if (enemy_pool.empty()) {
-			enemy baddie;
+			Enemy baddie;
 			baddie.position = pos;
-			baddie.hp = 1;
+			randVal = GetRandomValue(0, 2); //0 for orc, 1 for ogre, 2 for mushroom
+			switch (randVal) {
+			case 0:
+				baddie.type = 'O'; //orc
+				baddie.hp = 1;
+				baddie.speed = 1.25;
+				break;
+			case 1:
+				baddie.type = 'G'; //ogre
+				baddie.hp = 3;
+				baddie.speed = 0.75;
+				break;
+			case 2:
+				baddie.type = 'M'; //mushroom
+				baddie.hp = 2;
+				baddie.speed = 1.5;
+				break;
+			default:
+				cout << "the random value has a wrong value" << endl;
+				break;
+			}
 			enemy_tracker.push_back(baddie);
 		}
 		else {
 			enemy_tracker.push_back(enemy_pool.back());
-			enemy_tracker.back().hp = 1;
+			switch (enemy_pool.back().type) {
+			case 'O':
+				enemy_pool.back().hp = 1;
+				break;
+			case 'G':
+				enemy_pool.back().hp = 3;
+				break;
+			case 'M':
+				enemy_pool.back().hp = 2;
+				break;
+			default: break;
+			}
 			enemy_tracker.back().position = pos;
 			enemy_pool.pop_back();
 		}
@@ -1184,7 +1212,23 @@ void DrawEnemies() {
 		else {
 			src = { 16, 0, 16, 16 };
 		}
-		DrawTexturePro(orc_spritesheet, src, { enemy_tracker[i].position.x, enemy_tracker[i].position.y , tile_size, tile_size }, { 0,0 }, 0, WHITE);
+		Texture2D texture;
+		switch (enemy_tracker[i].type) {
+		case 'O': //orc
+			texture = orc_spritesheet;
+			break;
+		case 'G': // ogre
+			texture = ogre_spritesheet;
+			break;
+		case 'M': // mushroom
+			texture = mushroom_spritesheet;
+			break;
+		default:
+			cout << "enemy type not recognized" << endl;
+			texture = orc_spritesheet; //default texture
+			break;
+		}
+		DrawTexturePro(texture, src, { enemy_tracker[i].position.x, enemy_tracker[i].position.y , tile_size, tile_size }, { 0,0 }, 0, WHITE);
 	}
 }
 void DrawBullets() {
