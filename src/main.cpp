@@ -1009,14 +1009,21 @@ void changeLevel() {
 		//delete all obstacles
 		obstacle_tracker.clear();
 		obstacles_positioned = false;
+		powerUp_tracker.clear();
+		deathAnim_tracker.clear();
 		if (level_count + 1 < map_list.size()) {//adds one to the index of the map vector
 			level_count++;
 		}
 		else {//repeats to the first level if player is on the last
 			level_count = 0;
 		}
-		player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
 
+		if (level_count == 4 || level_count == 8) {
+			player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
+		}
+		else {
+			player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+		}
 	}
 }
 //UPDATE GAME
