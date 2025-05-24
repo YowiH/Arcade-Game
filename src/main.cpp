@@ -83,6 +83,7 @@ int item_being_held_up = -1;  // -1 = none
 bool boot_bought = false;
 int gun_upgrade_level = -1;       // -1 means not bought yet
 int backpack_upgrade_level = -1;  // -1 means not bought yet
+float saved_speed = 0;
 
 struct ShopItem {
 	Texture2D tex;
@@ -268,6 +269,7 @@ Sound power_up_pick_up;
 Sound coin_sound;
 Sound player_death;
 Sound pick_up_coffee;
+Sound use_power_up;
 
 //music
 Music main_theme;
@@ -317,6 +319,7 @@ void LoadAssets() {
 	coin = LoadTexture("coin.png");
 	extra_life = LoadTexture("extra_life.png");
 	coffee = LoadTexture("coffe.png");
+	coin_5 = LoadTexture("coin_5.png");
 
 	//SHOP
 	shop_keeper_spritesheet = LoadTexture("shop_keeper_spritesheet.png");
@@ -337,7 +340,8 @@ void LoadAssets() {
 	power_up_pick_up = LoadSound("power_up_pick_up.mp3");
 	coin_sound = LoadSound("coin.mp3");
 	player_death = LoadSound("death_player.mp3");
-	pick_up_coffee = LoadSound("pick_up_coffee.mp3");
+	pick_up_coffee = LoadSound("pick_up_coffe.mp3");
+	use_power_up = LoadSound("use_power_up.mp3");
 
 	//MUSIC
 	main_theme = LoadMusicStream("JOTPK_song.wav");
@@ -381,6 +385,7 @@ void UnloadGame() {
 	UnloadTexture(coin);
 	UnloadTexture(extra_life);
 	UnloadTexture(coffee);
+	UnloadTexture(coin_5);
 
 	//shop
 	UnloadTexture(shop_keeper_spritesheet);
@@ -394,6 +399,7 @@ void UnloadGame() {
 	UnloadSound(enemy_death);
 	UnloadSound(coin_sound);
 	UnloadSound(pick_up_coffee);
+	UnloadSound(use_power_up);
 
 	//music
 	UnloadMusicStream(main_theme);
@@ -800,7 +806,7 @@ void spawnPowerUp(float x, float y) {
 	randVal = GetRandomValue(1, 5);
 	if (randVal == 1) {
 		char C;
-		randVal = GetRandomValue(0, 2);
+		randVal = GetRandomValue(0, 3);
 		switch (randVal) {
 		case 0: //extra life
 			C = 'U';
@@ -808,7 +814,10 @@ void spawnPowerUp(float x, float y) {
 		case 1: //coin
 			C = 'O';
 			break;
-		case 2: //coffee
+		case 2: //coin 5
+			C = 'T';
+			break;
+		case 3: //coffee
 			C = 'D'; 
 			break;
 		default:
@@ -917,8 +926,12 @@ void player_powerUpColl() {
 				coins++;
 				PlaySound(coin_sound);
 				break;
+			case 'T'://monedes
+				coins+=5;
+				PlaySound(coin_sound);
+				break;
 			case 'D': //coffee
-				PlaySound(pick_up_coffee);
+				PlaySound(power_up_pick_up); //same sound as picking up coffee
 				if (stored_power_up == ' ') stored_power_up = 'D';
 				else {
 					// If slot already has something, auto-activate new one
@@ -926,6 +939,7 @@ void player_powerUpColl() {
 						active_power_up_type = 'D';
 						power_up_timer = 16 * 60;
 						player_Speed += 0.5f;
+						PlaySound(power_up_pick_up);//same sound as using power-up
 					}
 				}
 				break;
@@ -944,6 +958,7 @@ void runPowerUp() {
 	if (IsKeyPressed(KEY_SPACE) && stored_power_up != ' ' && power_up_timer <= 0) {
 		active_power_up_type = stored_power_up;
 		stored_power_up = ' ';
+		PlaySound(power_up_pick_up); //same sound as using power-up
 		if (active_power_up_type == 'D') {
 			player_Speed += 0.5f;
 			power_up_timer = 16 * 60;
@@ -1334,11 +1349,17 @@ void UpdateGame() {//update variables and positions
 void DrawPlayer() {
 	//shop animation
 	if (shop_phase == 3 && item_being_held_up != -1) {
+		if (player_Speed != 0) saved_speed = player_Speed;
+		player_Speed = 0;
 		
 		Rectangle holding_src = { 16, 0, 16, 16 }; 
 		Rectangle holding_dest = { player_pos.x, player_pos.y, player_size.x, player_size.y };
 		DrawTexturePro(player_character_spritesheet, holding_src, holding_dest, { 0, 0 }, 0, WHITE);
 		return;
+	}
+	else if (player_Speed == 0 && saved_speed > 0) {
+		player_Speed = saved_speed;
+		saved_speed = 0;
 	}
 
 	if (anim_dir != 0) {//esta disparant
@@ -1488,6 +1509,7 @@ void DrawUI() {
 
 	//draw coins
 	DrawTextureEx(coin, { 0, tile_size * 4 }, 0, (tile_size / 16) * 1.25, WHITE);
+
 	//write actual coins
 	DrawText(TextFormat("X%i", coins), tile_size + tile_size/2, tile_size * 4 + tile_size / 4, 10 * (tile_size / 16), WHITE);
 	
@@ -1573,6 +1595,9 @@ void drawPowerUps() {
 			break;
 		case 'O':
 			DrawTextureEx(coin, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
+			break;
+		case 'T':
+			DrawTextureEx(coin_5, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
 			break;
 		case 'D':
 			DrawTextureEx(coffee, { powerUp_tracker[i].position }, 0, tile_size / 16, WHITE);
@@ -1665,7 +1690,6 @@ void UpdateDrawFrame() {
 	UpdateGame();
 	DrawGame();
 }
-
 
 
 int main()
