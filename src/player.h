@@ -1,5 +1,6 @@
 #pragma once
 #include "walker.h"
+#include "enemy.h"
 #include "obstacle.h"
 #include "bullet.h"
 #include "powerUp.h"
@@ -20,9 +21,6 @@ protected:
 	bool xPosBlock = false, xNegBlock = false;
 	bool yPosBlock = false, yNegBlock = false;
 
-	std::vector<Bullet> bullet_tracker{};
-	std::vector<Bullet> bullet_pool{};
-
 	//shooting
 	int fire_frame_counter = 0;
 	int fire_rate = 15;
@@ -30,12 +28,12 @@ protected:
 	int anim_dir; //variable to know what animation to play when shooting
 public:
 	Player();
-	bool get_is_dying() const;
-	int get_coins() const;
-	int get_mov_dir() const;
-	int get_walk_anim_counter() const;
-	int get_right_foot() const;
-	std::vector<Bullet> get_bullet_tracker() const;
+	bool get_is_dying();
+	int get_coins();
+	int get_mov_dir();
+	int get_walk_anim_counter();
+	bool get_right_foot();
+	int get_damage();
 
 	void add_coins(int amount);
 	void add_walk_anim_counter(int amount);
@@ -50,14 +48,9 @@ public:
 	void draw_death(Texture2D player_character_death);
 
 	void move();
-	void be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, int& active_enemies, std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool, std::vector<PowerUp>& bullet_tracker, std::vector<PowerUp>& bullet_pool);
+	void be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, int& active_enemies, std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool, std::vector<Bullet>& bullet_tracker, std::vector<Bullet>& bullet_pool);
 	void be_restrained(float x, float y);
 	void collide(std::vector<Obstacle>& obstacle_tracker);
 	void collect(std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool, Sound power_up_pick_up, Sound coin_sound);
-	void shoot(Sound shoot_fx);
-
-	void bullet_update();
-	void bullet_attack();
-	void bullet_collision();
-	void bullet_draw(Texture2D bullet_player);
+	void shoot(Sound shoot_fx, std::vector<Bullet>& bullet_tracker, std::vector<Bullet>& bullet_pool);
 };

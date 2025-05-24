@@ -55,28 +55,28 @@ void Map::draw(bool bush_frame, bool& obstacles_positioned, std::vector<Obstacle
                     DrawTexturePro(textures[5], src, { pos.x, pos.y, tile_size, tile_size }, { 0, 0 }, 0, WHITE);
                     if (!obstacles_positioned && obstacle_pool.empty()) {
                         Obstacle obs(pos.x, pos.y);
-                        obstacle_tracker.push_back(obs);
+                        obstacle_tracker.push_back(std::move(obs));
                     }
                     break;
                 case 'O': 
                     DrawTextureEx(textures[6], pos, 0, tile_size / 16, WHITE); 
                     if (!obstacles_positioned && obstacle_pool.empty()) {
                         Obstacle obs(pos.x, pos.y);
-                        obstacle_tracker.push_back(obs);
+                        obstacle_tracker.push_back(std::move(obs));
                     }
                     break;
                 case 'R': 
                     DrawTextureEx(textures[7], pos, 0, tile_size / 16, WHITE); 
                     if (!obstacles_positioned && obstacle_pool.empty()) {
                         Obstacle obs(pos.x, pos.y);
-                        obstacle_tracker.push_back(obs);
+                        obstacle_tracker.push_back(std::move(obs));
                     }
                     break;
                 case 'T': 
                     DrawTextureEx(textures[8], pos, 0, tile_size / 16, WHITE); 
                     if (!obstacles_positioned && obstacle_pool.empty()) {
                         Obstacle obs(pos.x, pos.y);
-                        obstacle_tracker.push_back(obs);
+                        obstacle_tracker.push_back(std::move(obs));
                     }
                     break;
                 case 'I': 

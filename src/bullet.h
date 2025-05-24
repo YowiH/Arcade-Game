@@ -8,8 +8,14 @@ protected:
 	int speed = 5;
 public:
 	Bullet(Vector2 position);
+
+	Bullet(const Bullet&) = delete;
+	Bullet& operator=(const Bullet&) = delete;
+	Bullet(Bullet&&) = default;
+	Bullet& operator=(Bullet&&) = default;
+
 	void set_damage(int new_damage);
 	void set_velocity(Vector2 new_velocity);
-	Vector2 get_velocity() const;
-	int get_speed() const;
+	Vector2 get_velocity();
+	int get_speed();
 };

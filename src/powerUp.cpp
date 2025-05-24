@@ -1,14 +1,16 @@
 #include "powerUp.h"
 
-PowerUp::PowerUp(Vector2 position) : Entity(rec) {
+PowerUp::PowerUp(Vector2 position) : Entity({position.x, position.y, tile_size, tile_size}) {
+	type = '.';
+	despawn_timer = 0;
 	set_position(position);
 }
 
-int PowerUp::get_despawn_timer() const {
+int PowerUp::get_despawn_timer() {
 	return despawn_timer;
 }
 
-char PowerUp::get_type() const {
+char PowerUp::get_type() {
 	return type;
 }
 

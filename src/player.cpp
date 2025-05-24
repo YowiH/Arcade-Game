@@ -10,28 +10,36 @@ Player::Player() : Walker(rec) {
 	damage = 1;
 }
 
-bool Player::get_is_dying() const {
+bool Player::get_is_dying() {
 	return is_dying;
 }
 
-int Player::get_coins() const {
+int Player::get_coins() {
 	return coins;
 }
 
-int Player::get_mov_dir() const {
+int Player::get_mov_dir() {
 	return mov_dir;
 }
 
-int Player::get_walk_anim_counter() const {
+int Player::get_walk_anim_counter() {
 	return walk_anim_counter;
 }
 
-std::vector<Bullet> get_bullet_tracker() const {
-	return bullet_tracker;
+bool Player::get_right_foot() {
+	return right_foot;
+}
+
+int Player::get_damage() {
+	return damage;
 }
 
 void Player::add_coins(int amount) {
 	coins += amount;
+}
+
+void Player::add_walk_anim_counter(int amount) {
+	walk_anim_counter += amount;
 }
 
 void Player::add_death_anim(int amount) {
@@ -48,6 +56,10 @@ void Player::set_walk_anim_counter(int new_amount) {
 
 void Player::set_death_anim(int new_amount) {
 	death_anim = new_amount;
+}
+
+void Player::set_right_foot(bool new_state) {
+	right_foot = new_state;
 }
 
 void Player::draw(Texture2D player_character_spritesheet) {
@@ -247,7 +259,7 @@ void Player::move() {
 	yNegBlock = false;
 }
 
-void Player::be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, int& active_enemies, std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool, std::vector<PowerUp>& bullet_tracker, std::vector<PowerUp>& bullet_pool) {
+void Player::be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, int& active_enemies, std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>& powerUp_pool, std::vector<Bullet>& bullet_tracker, std::vector<Bullet>& bullet_pool) {
 	bool already_damaged = false;
 	int i = 0;
 	while (!already_damaged && i < enemy_tracker.size()) {
@@ -262,7 +274,7 @@ void Player::be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, 
 			//borrar enemics
 			for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
 				//save the bullet in the pool
-				enemy_pool.push_back(enemy_tracker[i]);
+				enemy_pool.push_back(std::move(enemy_tracker[i]));
 				//borrar bullet
 				auto& j = enemy_tracker.begin() + i;
 				enemy_tracker.erase(j);
@@ -272,7 +284,7 @@ void Player::be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, 
 			//borrar totes les bales
 			for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
 				//save the bullet in the pool
-				bullet_pool.push_back(bullet_tracker[i]);
+				bullet_pool.push_back(std::move(bullet_tracker[i]));
 				//borrar bullet
 				auto& j = bullet_tracker.begin() + i;
 				bullet_tracker.erase(j);
@@ -281,7 +293,7 @@ void Player::be_attacked(Sound player_death, std::vector<Enemy>& enemy_tracker, 
 			//borrar tots els power ups
 			for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
 				//save the bullet in the pool
-				powerUp_pool.push_back(powerUp_tracker[i]);
+				powerUp_pool.push_back(std::move(powerUp_tracker[i]));
 				//borrar bullet
 				auto& j = powerUp_tracker.begin() + i;
 				powerUp_tracker.erase(j);
@@ -368,7 +380,7 @@ void Player::collect(std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>
 				break;
 			}
 			//guardar power up al pool
-			powerUp_pool.push_back(powerUp_tracker[i]);
+			powerUp_pool.push_back(std::move(powerUp_tracker[i]));
 			//borrar powerUp
 			auto& k = powerUp_tracker.begin() + i;
 			powerUp_tracker.erase(k);
@@ -376,7 +388,7 @@ void Player::collect(std::vector<PowerUp>& powerUp_tracker, std::vector<PowerUp>
 	}
 }
 
-void Player::shoot(Sound shoot_fx) {
+void Player::shoot(Sound shoot_fx, std::vector<Bullet>& bullet_tracker, std::vector<Bullet>& bullet_pool) {
 	shoot_dir = { 0, 0 };
 	//we get the direction of the bullet
 	if (IsKeyDown(KEY_UP)) {
@@ -404,10 +416,10 @@ void Player::shoot(Sound shoot_fx) {
 			Bullet bullet({ rec.x, rec.y });
 			bullet.set_damage(damage);
 			bullet.set_velocity(shoot_dir);
-			bullet_tracker.push_back(bullet);
+			bullet_tracker.push_back(std::move(bullet));
 		}
 		else {
-			bullet_tracker.push_back(bullet_pool.back());
+			bullet_tracker.push_back(std::move(bullet_pool.back()));
 			bullet_tracker.back().set_damage(damage);
 			bullet_tracker.back().set_position({ rec.x + tile_size / 4 , rec.y + tile_size / 4 });
 			bullet_tracker.back().set_velocity(shoot_dir);
@@ -419,92 +431,4 @@ void Player::shoot(Sound shoot_fx) {
 		fire_frame_counter++;
 	}
 	//shoot_dir = { 0, 0 };
-}
-
-void Player::bullet_update() {
-	//get the lenght of the bullet vector
-	//update bullet's position
-	for (int i = 0; i < bullet_tracker.size(); i++) {
-		Bullet& b = bullet_tracker[i];
-		if (b.get_velocity().x != 0 && b.get_velocity().y != 0) {
-			b.set_position({ b.get_rec().x + b.get_velocity().x * b.get_speed() * 0.707f, b.get_rec().y + b.get_velocity().y * b.get_speed() * 0.707f});
-		}
-		else {
-			b.set_position({ b.get_rec().x + b.get_velocity().x * b.get_speed(), b.get_rec().y + b.get_velocity().y * b.get_speed()});
-		}
-	}
-
-	//destroy bullets
-	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
-		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
-		if ((bullet_tracker[i].get_rec().x <= left_margin || bullet_tracker[i].get_rec().x >= area_size + (left_margin) || bullet_tracker[i].get_rec().y <= tile_size || bullet_tracker[i].get_rec().y >= area_size + tile_size)) { //&& bullet_tracker[i] != NULL
-			//save the bullet in the pool
-			bullet_pool.push_back(bullet_tracker[i]);
-			//borrar bullet
-			auto& j = bullet_tracker.begin() + i;
-			bullet_tracker.erase(j);
-		}
-
-	}
-}
-
-void Player::bullet_draw(Texture2D bullet_player) {
-	int bullet_amount = bullet_tracker.size();
-	for (int i = 0; i < bullet_amount; i++) {
-		DrawTextureEx(bullet_player, bullet_tracker[i].get_position(), 0, tile_size / 16, WHITE);
-	}
-}
-
-void Player::bullet_attack(std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, std::vector<Bullet>& bullet_tracker, int& active_enemies) {
-	//comprovar totes les bales per tots els enemics
-	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
-		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
-			if (enemy_tracker.size() - 1 >= i && bullet_tracker.size() - 1 >= j && !enemy_tracker.empty() && !bullet_tracker.empty()) {
-				if (CheckCollisionCircles({ bullet_tracker[j].get_rec().x + tile_size / 2, bullet_tracker[j].get_rec().y + tile_size / 2}, tile_size / 8, {enemy_tracker[i].get_rec().x + tile_size / 2, enemy_tracker[i].get_rec().y + tile_size / 2}, tile_size / 2)) { //MASSIVE ERROR
-					//save the bullet in the pool
-					bullet_pool.push_back(bullet_tracker[j]);
-					//borrar bullet
-					auto& k = bullet_tracker.begin() + j;
-					bullet_tracker.erase(k);
-
-					//reduce hit enemy hitpoints
-					enemy_tracker[i].set_hp(enemy_tracker[i].get_hp() - damage);
-					//kill enemy if hitpoints are 0 or lower
-					if (enemy_tracker[i].get_hp() <= 0) {
-
-						//save the enemy in the pool
-						enemy_pool.push_back(enemy_tracker[i]);
-
-						//mirar si es crea un power up
-						spawnPowerUp(enemy_tracker[i].get_rec().x, enemy_tracker[i].get_rec().y);
-
-						//crea un death animations object
-						createDeathAnimation(enemy_tracker[i].get_rec());
-
-						//borrar enemy
-						auto& e = enemy_tracker.begin() + i;
-						enemy_tracker.erase(e);
-						active_enemies--;
-
-					}
-				}
-			}
-
-		}
-	}
-}
-
-void Player::bullet_collision(std::vector<Obstacle>& obstacle_tracker) {
-	for (int j = 0; j < obstacle_tracker.size(); j++) {
-		for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
-
-			if (CheckCollisionCircles({ bullet_tracker[i].get_rec().x + tile_size / 2, bullet_tracker[i].get_rec().y + tile_size / 2}, tile_size / 8, {obstacle_tracker[j].get_rec().x + tile_size / 2, obstacle_tracker[j].get_rec().y + tile_size / 2}, tile_size / 2)) {
-				//save the bullet in the pool
-				bullet_pool.push_back(bullet_tracker[i]);
-				//borrar bullet
-				auto& k = bullet_tracker.begin() + i;
-				bullet_tracker.erase(k);
-			}
-		}
-	}
 }

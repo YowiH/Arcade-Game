@@ -9,11 +9,15 @@ protected:
 public:
 	Enemy(Vector2 pos);
 
-	bool get_right_foot() const;
-	int get_animation_counter() const;
+	Enemy(const Enemy&) = delete;
+	Enemy& operator=(const Enemy&) = delete;
+	Enemy(Enemy&&) = default;
+	Enemy& operator=(Enemy&&) = default;
+
+	bool get_right_foot();
+	int get_animation_counter();
 
 	void add_animation_counter(int amount);
-
 	void set_animation_counter(int new_amount);
 	void set_right_foot(bool new_state);
 };

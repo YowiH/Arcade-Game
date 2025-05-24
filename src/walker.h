@@ -10,7 +10,13 @@ protected:
 	bool canFly = false;
 public:
 	Walker(Rectangle rec);
+
+	Walker(const Walker&) = delete;
+	Walker& operator=(const Walker&) = delete;
+	Walker(Walker&&) = default;
+	Walker& operator=(Walker&&) = default;
+
 	void set_hp(int new_hp);
-	float get_speed() const;
-	int get_hp() const;
+	float get_speed();
+	int get_hp();
 };

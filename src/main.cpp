@@ -72,6 +72,8 @@ struct death_anim {
 };
 
 //bullet vectors
+std::vector<Bullet> bullet_tracker{};
+std::vector<Bullet> bullet_pool{};
 
 //enemy vectors
 std::vector<Enemy> enemy_tracker{};
@@ -293,7 +295,7 @@ void UnloadGame() {
 	//music
 	UnloadMusicStream(main_theme);
 
-	CloseAudioDevice;
+	CloseAudioDevice();
 }
 
 //INITAILIZE GAME
@@ -403,12 +405,12 @@ if (active_enemies < max_active_enemies && frames_since_enemy_spawn >= enemy_cre
 		}
 		if (enemy_pool.empty()) {
 			Enemy enemy(pos);
-			enemy_tracker.push_back(enemy);
+			enemy_tracker.push_back(std::move(enemy));
 		}
 		else {
-			enemy_tracker.push_back(enemy_pool.back());
+			enemy_tracker.push_back(std::move(enemy_pool.back()));
 			enemy_tracker.back().set_hp(1);
-			enemy_tracker.back().set_rec({pos.x, pos.y, tile_size, tile_size});
+			enemy_tracker.back().set_position({pos.x, pos.y});
 			enemy_pool.pop_back();
 		}
 		active_enemies++;
@@ -423,23 +425,8 @@ void moveEnemies() {
 	float magnitude;
 	for (int i = 0; i < enemy_tracker.size(); i++) {
 		magnitude = sqrt((player.get_rec().x - enemy_tracker[i].get_rec().x) * (player.get_rec().x - enemy_tracker[i].get_rec().x) + (player.get_rec().y - enemy_tracker[i].get_rec().y) * (player.get_rec().y - enemy_tracker[i].get_rec().y));
-		enemy_tracker[i].set_rec({ enemy_tracker[i].get_rec().x + ((player.get_rec().x - enemy_tracker[i].get_rec().x) / magnitude) * enemy_tracker[i].get_speed(), enemy_tracker[i].get_rec().y + ((player.get_rec().y - enemy_tracker[i].get_rec().y) / magnitude) * enemy_tracker[i].get_speed() });
-	}
-}
-
-//BULLETS MANAGER
-
-//POWER UP
-void powerUpUpdate() {
-	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
-		powerUp_tracker[i].add_despawn_timer(1);
-		if (powerUp_tracker[i].get_despawn_timer() > powerUp_lifespan) {
-			//guardar power up al pool
-			powerUp_pool.push_back(powerUp_tracker[i]);
-			//borrar powerUp
-			auto& k = powerUp_tracker.begin() + i;
-			powerUp_tracker.erase(k);
-		}
+		Rectangle enemyRectangle = { enemy_tracker[i].get_rec().x + ((player.get_rec().x - enemy_tracker[i].get_rec().x) / magnitude) * enemy_tracker[i].get_speed(), enemy_tracker[i].get_rec().y + ((player.get_rec().y - enemy_tracker[i].get_rec().y) / magnitude) * enemy_tracker[i].get_speed() };
+		enemy_tracker[i].set_rec(enemyRectangle);
 	}
 }
 
@@ -460,38 +447,38 @@ void spawnPowerUp(float x, float y) {
 			C = '.';
 			break;
 		}
-		
+
 		if (powerUp_pool.empty()) {
 			//en crea un
-			PowerUp powerUp({x, y});
+			PowerUp powerUp({ x, y });
 			powerUp.set_type(C);
-			powerUp_tracker.push_back(powerUp);
+			powerUp_tracker.push_back(std::move(powerUp));
 		}
 		else {
 			// agafa un del pool
-			powerUp_tracker.push_back(powerUp_pool.back());
-			powerUp_tracker.back().set_position({x , y});
+			powerUp_tracker.push_back(std::move(powerUp_pool.back()));
+			powerUp_tracker.back().set_position({ x , y });
 			powerUp_tracker.back().set_type(C);
 			powerUp_tracker.back().set_despawn_timer(0);
 			powerUp_pool.pop_back();
 		}
-		
+
 	}
 }
 
 void createDeathAnimation(Vector2 pos) {
-		PlaySound(enemy_death);
-		if (deathAnim_pool.empty()) {
-			death_anim d;
-			d.position = pos;
-			deathAnim_tracker.push_back(d);
-		}
-		else {
-			deathAnim_tracker.push_back(deathAnim_pool.back());
-			deathAnim_tracker.back().position = pos;
-			deathAnim_tracker.back().frameCounter = 0;
-			deathAnim_pool.pop_back();
-		}
+	PlaySound(enemy_death);
+	if (deathAnim_pool.empty()) {
+		death_anim d;
+		d.position = pos;
+		deathAnim_tracker.push_back(std::move(d));
+	}
+	else {
+		deathAnim_tracker.push_back(std::move(deathAnim_pool.back()));
+		deathAnim_tracker.back().position = pos;
+		deathAnim_tracker.back().frameCounter = 0;
+		deathAnim_pool.pop_back();
+	}
 }
 
 void updateDeathAnimations() {
@@ -502,7 +489,7 @@ void updateDeathAnimations() {
 
 		if (deathAnim_tracker[i].frameCounter >= 60 * 10) {
 			//save the death animation in the pool
-			deathAnim_pool.push_back(deathAnim_tracker[i]);
+			deathAnim_pool.push_back(std::move(deathAnim_tracker[i]));
 			//borrar death animation
 			auto& j = deathAnim_tracker.begin() + i;
 			deathAnim_tracker.erase(j);
@@ -510,6 +497,111 @@ void updateDeathAnimations() {
 	}
 
 }
+
+//BULLETS MANAGER
+void bullet_update() {
+	//get the lenght of the bullet vector
+	//update bullet's position
+	for (int i = 0; i < bullet_tracker.size(); i++) {
+		Bullet& b = bullet_tracker[i];
+		if (b.get_velocity().x != 0 && b.get_velocity().y != 0) {
+			b.set_position({ b.get_rec().x + b.get_velocity().x * b.get_speed() * 0.707f, b.get_rec().y + b.get_velocity().y * b.get_speed() * 0.707f });
+		}
+		else {
+			b.set_position({ b.get_rec().x + b.get_velocity().x * b.get_speed(), b.get_rec().y + b.get_velocity().y * b.get_speed() });
+		}
+	}
+
+	//destroy bullets
+	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
+		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
+		if ((bullet_tracker[i].get_rec().x <= left_margin || bullet_tracker[i].get_rec().x >= area_size + (left_margin) || bullet_tracker[i].get_rec().y <= tile_size || bullet_tracker[i].get_rec().y >= area_size + tile_size)) { //&& bullet_tracker[i] != NULL
+			//save the bullet in the pool
+			bullet_pool.push_back(std::move(bullet_tracker[i]));
+			//borrar bullet
+			auto& j = bullet_tracker.begin() + i;
+			bullet_tracker.erase(j);
+		}
+
+	}
+}
+
+void bullet_draw(Texture2D bullet_player) {
+	int bullet_amount = bullet_tracker.size();
+	for (int i = 0; i < bullet_amount; i++) {
+		DrawTextureEx(bullet_player, bullet_tracker[i].get_position(), 0, tile_size / 16, WHITE);
+	}
+}
+
+void bullet_attack(std::vector<Enemy>& enemy_tracker, std::vector<Enemy>& enemy_pool, std::vector<Bullet>& bullet_tracker, int& active_enemies) {
+	//comprovar totes les bales per tots els enemics
+	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
+		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
+			if (enemy_tracker.size() - 1 >= i && bullet_tracker.size() - 1 >= j && !enemy_tracker.empty() && !bullet_tracker.empty()) {
+				if (CheckCollisionCircles({ bullet_tracker[j].get_rec().x + tile_size / 2, bullet_tracker[j].get_rec().y + tile_size / 2 }, tile_size / 8, { enemy_tracker[i].get_rec().x + tile_size / 2, enemy_tracker[i].get_rec().y + tile_size / 2 }, tile_size / 2)) { //MASSIVE ERROR
+					//save the bullet in the pool
+					bullet_pool.push_back(std::move(bullet_tracker[j]));
+					//borrar bullet
+					auto& k = bullet_tracker.begin() + j;
+					bullet_tracker.erase(k);
+
+					//reduce hit enemy hitpoints
+					enemy_tracker[i].set_hp(enemy_tracker[i].get_hp() - player.get_damage());
+					//kill enemy if hitpoints are 0 or lower
+					if (enemy_tracker[i].get_hp() <= 0) {
+
+						//save the enemy in the pool
+						enemy_pool.push_back(std::move(enemy_tracker[i]));
+
+						//mirar si es crea un power up
+						spawnPowerUp(enemy_tracker[i].get_rec().x, enemy_tracker[i].get_rec().y);
+
+						//crea un death animations object
+						createDeathAnimation(enemy_tracker[i].get_position());
+
+						//borrar enemy
+						auto& e = enemy_tracker.begin() + i;
+						enemy_tracker.erase(e);
+						active_enemies--;
+
+					}
+				}
+			}
+
+		}
+	}
+}
+
+void bullet_collision(std::vector<Obstacle>& obstacle_tracker) {
+	for (int j = 0; j < obstacle_tracker.size(); j++) {
+		for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
+
+			if (CheckCollisionCircles({ bullet_tracker[i].get_rec().x + tile_size / 2, bullet_tracker[i].get_rec().y + tile_size / 2 }, tile_size / 8, { obstacle_tracker[j].get_rec().x + tile_size / 2, obstacle_tracker[j].get_rec().y + tile_size / 2 }, tile_size / 2)) {
+				//save the bullet in the pool
+				bullet_pool.push_back(std::move(bullet_tracker[i]));
+				//borrar bullet
+				auto& k = bullet_tracker.begin() + i;
+				bullet_tracker.erase(k);
+			}
+		}
+	}
+}
+
+//POWER UP
+void powerUpUpdate() {
+	for (int i = powerUp_tracker.size() - 1; i >= 0; i--) {
+		powerUp_tracker[i].add_despawn_timer(1);
+		if (powerUp_tracker[i].get_despawn_timer() > powerUp_lifespan) {
+			//guardar power up al pool
+			powerUp_pool.push_back(std::move(powerUp_tracker[i]));
+			//borrar powerUp
+			auto& k = powerUp_tracker.begin() + i;
+			powerUp_tracker.erase(k);
+		}
+	}
+}
+
+
 
 //ANIMATION
 void animationManager() {
@@ -585,26 +677,26 @@ void UpdateGame() {//update variables and positions
 			moveEnemies();
 
 			//SHOOTING BULLETS
-			player.shoot(shoot_fx);
+			player.shoot(shoot_fx, bullet_tracker, bullet_pool);
 
 			//update bullets
-			player.bullet_update();
+			bullet_update();
 
 			//update power ups
 			powerUpUpdate();
 
 			//COLLISIONS
 			//player-enemies
-			player.be_attacked(player_death, enemy_tracker, enemy_pool, active_enemies, powerUp_tracker, powerUp_pool, player.get_bullet_tracker());
+			player.be_attacked(player_death, enemy_tracker, enemy_pool, active_enemies, powerUp_tracker, powerUp_pool, bullet_tracker, bullet_pool);
 
 			//player-obstacles
 			player.collide(obstacle_tracker);
 
 			//bullet-enemies
-			player.bullet_attack();
+			bullet_attack(enemy_tracker, enemy_pool, bullet_tracker, active_enemies);
 
 			//bullets-obstacles
-			player.bullet_collision();
+			bullet_collision(obstacle_tracker);
 
 			//player power-up colisions
 			player.collect(powerUp_tracker, powerUp_pool, power_up_pick_up, coin_sound);
@@ -647,8 +739,8 @@ void DrawUI() {
 	DrawTextureEx(power_up_slot, { tile_size, tile_size}, 0, (tile_size / 16) * 1.25, WHITE);
 
 	//draw level bar
-	int leangth = area_size - (area_size * (frames_since_level_start / level_length));
-	DrawRectangle(tile_size * 4, tile_size * 0.45, leangth, tile_size * 0.4, GREEN);
+	int length = area_size - (area_size * (frames_since_level_start / level_length));
+	DrawRectangle(tile_size * 4, static_cast<int>(tile_size * 0.45), length, static_cast<int>(tile_size * 0.4), GREEN);
 }
 void DrawEnemies() {
 	for (int i = 0; i < enemy_tracker.size(); i++) {
@@ -719,9 +811,9 @@ void DrawStartScreen() {
 void DrawGameOverScreen() {
 	ClearBackground(BLACK);
 	if (!close_game) {
-		DrawText("Game Over", area_size / 2 - 80, area_size / 2 - 40, 40, WHITE);
+		DrawText("Game Over", static_cast<int>(area_size / 2 - 80), static_cast<int>(area_size / 2 - 40), 40, WHITE);
 
-		DrawText("Quit", area_size / 2 - 80, area_size / 2 + 80, 20, RED);
+		DrawText("Quit", static_cast<int>(area_size / 2 - 80), static_cast<int>(area_size / 2 + 80), 20, RED);
 
 		//DrawText("Restart", area_size / 2 - 80, area_size / 2 + 40, 20, (selected_option == 0) ? RED : WHITE);
 		//DrawText("Quit", area_size / 2 - 80, area_size / 2 + 80, 20, (selected_option == 1) ? RED : WHITE);
@@ -759,7 +851,7 @@ void DrawGame() {//draws the game every frame
 		drawPowerUps();
 
 		//draw bullets
-		player.bullet_draw(bullet_player);
+		bullet_draw(bullet_player);
 
 	}
 	else if (!game_started) {
@@ -785,7 +877,7 @@ int main()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(area_size + (left_margin), area_size + tile_size, "Journey of the prairie king");
+	InitWindow(static_cast<int>(area_size + (left_margin)), static_cast<int>(area_size + tile_size), "Journey of the prairie king");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");

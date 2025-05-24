@@ -1,18 +1,19 @@
 #include "enemy.h"
 #include "player.h"
 
-Enemy::Enemy(Vector2 pos) : Walker(rec) {
-	rec = { pos.x, pos.y, tile_size, tile_size };
+Enemy::Enemy(Vector2 pos) : Walker({ pos.x, pos.y, tile_size, tile_size }) {
 	hp = 1;
 	damage = 1;
 	speed = 1.25;
+	right_foot = false;
+	velocity = { 0, 0 };
 }
 
-bool Enemy::get_right_foot() const {
+bool Enemy::get_right_foot() {
 	return right_foot;
 }
 
-int Enemy::get_animation_counter() const {
+int Enemy::get_animation_counter() {
 	return animation_counter;
 }
 

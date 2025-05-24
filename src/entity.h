@@ -11,8 +11,14 @@ protected:
 	const float area_size = tile_size * 16;
 public:
 	Entity(Rectangle rec);
-	Rectangle get_rec() const;
-	void set_rec(const Rectangle& new_rec);
-	Vector2 get_position() const;
+
+	Entity(const Entity&) = delete;
+	Entity& operator=(const Entity&) = delete;
+	Entity(Entity&&) = default;
+	Entity& operator=(Entity&&) = default;
+
+	Rectangle get_rec();
+	void set_rec(Rectangle& new_rec);
+	Vector2 get_position();
 	void set_position(Vector2 position);
 };

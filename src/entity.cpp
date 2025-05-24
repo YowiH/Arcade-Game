@@ -1,17 +1,18 @@
 #include "entity.h"
 
 Entity::Entity(Rectangle rec) {
+	this->rec = rec;
 }
 
-Rectangle Entity::get_rec() const {
+Rectangle Entity::get_rec() {
 	return rec;
 }
 
-void Entity::set_rec(const Rectangle& new_rec) {
+void Entity::set_rec(Rectangle& new_rec) {
 	rec = new_rec;
 }
 
-Vector2 Entity::get_position() const {
+Vector2 Entity::get_position() {
 	return { rec.x, rec.y };
 }
 
