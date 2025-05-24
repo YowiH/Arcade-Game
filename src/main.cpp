@@ -1416,6 +1416,10 @@ int main()
 
 
 	while (!close_game) {
+		if (WindowShouldClose() || IsKeyPressed(KEY_ESCAPE)) {
+			close_game = true;
+			continue;
+		}
 		UpdateDrawFrame();
 	}
 	UnloadGame();
