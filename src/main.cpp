@@ -468,6 +468,10 @@ void PlayerMovement() {
 }
 
 void createEnemies() {
+	if (level_count == 4 || level_count == 8) {
+		frames_since_enemy_spawn++;
+		return;
+	}
 	if (active_enemies < max_active_enemies && frames_since_enemy_spawn >= enemy_creation_delay) {
 		randVal = GetRandomValue(0, 11);
 		Vector2 pos = {0, 0};
