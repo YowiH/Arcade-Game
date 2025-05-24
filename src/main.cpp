@@ -242,9 +242,10 @@ Music main_theme;
 //DATA MANAGEMENT
 std::vector<Texture2D> desert_textures{};
 std::vector<Texture2D> forest_textures{};
+std::vector<Texture2D> cementery_textures{};
 
 void LoadAssets() {
-	map_list = { Map("AREAS/area1_1.txt", 'D'), Map("AREAS/area1_2.txt", 'D'), Map("AREAS/area1_3.txt", 'D'), Map("AREAS/area1_4.txt", 'D'), Map("AREAS/area2_1.txt", 'F'), Map("AREAS/area2_2.txt" , 'F'), Map("AREAS/area2_3.txt" , 'F')};
+	map_list = { Map("AREAS/area1_1.txt", 'D'), Map("AREAS/area1_2.txt", 'D'), Map("AREAS/area1_3.txt", 'D'), Map("AREAS/area1_4.txt", 'D'), Map("AREAS/area1_5.txt", 'D'), Map("AREAS/area2_1.txt", 'F'), Map("AREAS/area2_2.txt" , 'F'), Map("AREAS/area2_3.txt" , 'F'), Map("AREAS/area1_5.txt", 'F'), Map("AREAS/area3_1.txt", 'C')};
 	// MAP TEXTURES
 	//dessert
 	dirt_grass = LoadTexture("dirt_grass.png");
@@ -268,6 +269,14 @@ void LoadAssets() {
 	stump = LoadTexture("stump.png");
 	river_forest1 = LoadTexture("river_forest1.png");
 	river_forest2 = LoadTexture("river_forest2.png");
+
+	//cementery
+	cementery_floor = LoadTexture("cementery_floor.png");
+	cementery_gravel = LoadTexture("cementery_gravel.png");
+	cementery_path = LoadTexture("cementery_path.png");
+	stone_floor = LoadTexture("stone_floor.png");
+	tombstone = LoadTexture("tombstone.png");
+
 
 	//CHARACTERS
 	player_character_spritesheet = LoadTexture("player_character_spritesheet.png");
@@ -301,6 +310,7 @@ void LoadAssets() {
 
 	desert_textures = { dirt, dirt_grass, dirt_stones, path_stones, path, bush_spritesheet, logs, river_desert1, river_desert2, bridge };
 	forest_textures = { grass, flowers_grass, tall_grass, path_grass, path_grass2, green_bush_spritesheet, stump, river_forest1, river_forest2, bridge };
+	cementery_textures = { cementery_floor, cementery_gravel, stone_floor, cementery_path, tombstone };
 }
 
 void UnloadGame() {
@@ -1255,7 +1265,7 @@ void DrawGame() {//draws the game every frame
 		ClearBackground(BLACK);
 
 		//draw map
-		map_list[level_count].draw(tile_size, left_margin, bush_frame, obstacles_positioned, obstacle_pool, obstacle_tracker, desert_textures, forest_textures);
+		map_list[level_count].draw(tile_size, left_margin, bush_frame, obstacles_positioned, obstacle_pool, obstacle_tracker, desert_textures, forest_textures, cementery_textures);
 
 		//draw enmie death animation
 		DrawDeathAnimations();
