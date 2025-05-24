@@ -583,17 +583,41 @@ void createEnemies() {
 	}
 }
 
-void enemyMovement() {
-	//delete this trial code
-	float magnitude;
-	for (int i = 0; i < enemy_tracker.size(); i++) {
-		magnitude = sqrt((player_pos.x - enemy_tracker[i].position.x) * (player_pos.x - enemy_tracker[i].position.x) + (player_pos.y - enemy_tracker[i].position.y) * (player_pos.y - enemy_tracker[i].position.y));
-		enemy_tracker[i].position = { enemy_tracker[i].position.x + ((player_pos.x - enemy_tracker[i].position.x) / magnitude) * enemy_tracker[i].speed, enemy_tracker[i].position.y + ((player_pos.y - enemy_tracker[i].position.y) / magnitude) * enemy_tracker[i].speed };
+bool checkEnemyObstacleCollision(Vector2 newPos, float size, const std::vector<Obstacle>& obstacles) {
+	Rectangle enemyRec = { newPos.x, newPos.y, size, size };
+	for (const auto& obstacle : obstacles) {
+		if (CheckCollisionRecs(enemyRec, obstacle.get_rec())) {
+			return true; // Collision detected
+		}
 	}
-	//magnitude = sqrt((player_pos.x - tri.position.x) * (player_pos.x - tri.position.x) + (player_pos.y - tri.position.y) * (player_pos.y - tri.position.y));
-	/*if (tri.alive) {
-		tri.position = { tri.position.x + ((player_pos.x - tri.position.x) / magnitude) * 2, tri.position.y + ((player_pos.y - tri.position.y) / magnitude) * 2 };
-	}*/
+	return false; // No collision
+}
+
+void enemyMovement() {
+	for (int i = 0; i < enemy_tracker.size(); i++) {
+		Enemy& enemy = enemy_tracker[i];
+		float magnitude = sqrt(
+			(player_pos.x - enemy.position.x) * (player_pos.x - enemy.position.x) +
+			(player_pos.y - enemy.position.y) * (player_pos.y - enemy.position.y)
+		);
+		if (magnitude == 0) continue; // Avoid division by zero
+
+		// Calculate intended movement
+		float dx = ((player_pos.x - enemy.position.x) / magnitude) * enemy.speed;
+		float dy = ((player_pos.y - enemy.position.y) / magnitude) * enemy.speed;
+
+		// Try X movement
+		Vector2 newPosX = { enemy.position.x + dx, enemy.position.y };
+		if (!checkEnemyObstacleCollision(newPosX, tile_size, obstacle_tracker)) {
+			enemy.position.x += dx;
+		}
+
+		// Try Y movement
+		Vector2 newPosY = { enemy.position.x, enemy.position.y + dy };
+		if (!checkEnemyObstacleCollision(newPosY, tile_size, obstacle_tracker)) {
+			enemy.position.y += dy;
+		}
+	}
 }
 
 //BULLETS MANAGER
