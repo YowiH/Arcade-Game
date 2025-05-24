@@ -514,26 +514,35 @@ void createEnemies() {
 		case 11:
 			pos = { tile_size * 13, tile_size * 16 };
 			break;
-		defalult:
+		default:
 			cout << "the random value has a wrong value" << endl;
+			break;
 		}
+
+		std::vector<char> allowedTypes = { 'O' };
+		if (level_count == 2 || level_count == 3 || level_count == 5 || level_count == 6 || level_count == 7) {
+			allowedTypes.push_back('G'); //add ogre to the allowed types
+		}
+		if (level_count == 5 || level_count == 6 || level_count == 7) {
+			allowedTypes.push_back('M'); //add mushroom to the allowed types
+		}
+		int typeIdx = GetRandomValue(0, static_cast<int>(allowedTypes.size()) - 1);
+		char enemyType = allowedTypes[typeIdx];
+
 		if (enemy_pool.empty()) {
 			Enemy baddie;
 			baddie.position = pos;
-			randVal = GetRandomValue(0, 2); //0 for orc, 1 for ogre, 2 for mushroom
-			switch (randVal) {
-			case 0:
-				baddie.type = 'O'; //orc
+			baddie.type = enemyType;
+			switch (enemyType) {
+			case 'O':
 				baddie.hp = 1;
 				baddie.speed = 1.25;
 				break;
-			case 1:
-				baddie.type = 'G'; //ogre
+			case 'G':
 				baddie.hp = 3;
 				baddie.speed = 0.75;
 				break;
-			case 2:
-				baddie.type = 'M'; //mushroom
+			case 'M':
 				baddie.hp = 2;
 				baddie.speed = 1.5;
 				break;
@@ -545,19 +554,21 @@ void createEnemies() {
 		}
 		else {
 			enemy_tracker.push_back(enemy_pool.back());
-			switch (enemy_pool.back().type) {
+			Enemy& e = enemy_tracker.back();
+			e.type = enemyType;
+			switch (enemyType) {
 			case 'O':
-				enemy_pool.back().hp = 1;
+				e.hp = 1;
 				break;
 			case 'G':
-				enemy_pool.back().hp = 3;
+				e.hp = 3;
 				break;
 			case 'M':
-				enemy_pool.back().hp = 2;
+				e.hp = 2;
 				break;
 			default: break;
 			}
-			enemy_tracker.back().position = pos;
+			e.position = pos;
 			enemy_pool.pop_back();
 		}
 		active_enemies++;
