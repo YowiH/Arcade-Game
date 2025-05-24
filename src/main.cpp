@@ -37,7 +37,7 @@ bool close_game;
 
 //player varaibles
 Vector2 player_size{ tile_size, tile_size};
-Vector2 player_pos{ left_margin + (area_size / 2), tile_size + (area_size * 3 / 4)};
+Vector2 player_pos{ left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
 Vector2 player_mov_dir{0, 0};
 float player_Speed = 2;
 int Mov_dir;
@@ -366,7 +366,7 @@ void InitGame() {
 	game_started = false;
 	zoom_completed = false;
 	lives = 3;
-	player_pos = { left_margin + (area_size / 2), tile_size + (area_size * 3 / 4)};
+	player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
 	InitAudioDevice();
 	LoadAssets();
 	//start playing music
@@ -950,6 +950,8 @@ void changeLevel() {
 		else {//repeats to the first level if player is on the last
 			level_count = 0;
 		}
+		player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+
 	}
 }
 //UPDATE GAME
@@ -1139,7 +1141,7 @@ void DrawPlayerDeath() {
 	else if (player_death_anim <= 10 * 10) {}
 	else {
 		player_dying = false;
-		player_pos = { left_margin + (area_size / 2), tile_size + (area_size * 3 / 4) };
+		player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
 		player_death_anim = 0;
 		player_walk_anim_counter = 0;
 		player_death_anim = 0;
