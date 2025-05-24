@@ -914,7 +914,12 @@ void bullet_obstacleColl() { //bug here?
 	for (int j = 0; j < obstacle_tracker.size(); j++) {
 		for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
 
-			if (CheckCollisionCircles({ bullet_tracker[i].position.x + tile_size/2, bullet_tracker[i].position.y + tile_size / 2 }, tile_size / 8, { obstacle_tracker[j].get_rec().x + tile_size / 2, obstacle_tracker[j].get_rec().y + tile_size / 2}, tile_size / 2)) {
+			if (obstacle_tracker[j].get_type() == 'R' || obstacle_tracker[j].get_type() == 'T') {
+				//if the obstacle is a river or a wall, we don't check for collisions
+				continue;
+			}
+
+			else if (CheckCollisionCircles({ bullet_tracker[i].position.x + tile_size/2, bullet_tracker[i].position.y + tile_size / 2 }, tile_size / 8, { obstacle_tracker[j].get_rec().x + tile_size / 2, obstacle_tracker[j].get_rec().y + tile_size / 2}, tile_size / 2)) {
 				//save the bullet in the pool
 				bullet_pool.push_back(bullet_tracker[i]);
 				//borrar bullet
