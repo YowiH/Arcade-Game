@@ -29,7 +29,7 @@ float frames_since_level_start = 0;
 
  static float zoom = 0.01f * (tile_size / 16);
  static bool zoom_completed = false;
- static float zoom_speed = 0.005f * (tile_size / 16);
+ static float zoom_speed = 0.02f * (tile_size / 16);
 
 //game over screen variables
 //int selected_option = 0;
@@ -1241,11 +1241,19 @@ void DrawStartScreen() {
 
 	//DrawTextureEx(title_screen, { ((area_size + (tile_size * 3)) / 2) - ((tile_size) * 3), ((area_size + tile_size) / 2) - ((tile_size) * 3) }, 0, tile_size/16, BLACK);
 
-	DrawTexturePro(title_screen,
-		{ 0,0,(16 * 6), (16 * 5) },
-		{ area_size / 2 - ((tile_size) * 6 * zoom) / 2, area_size / 2 - ((tile_size) * 5 * zoom) / 2, (tile_size * 6 * zoom), (tile_size * 5 * zoom) },
-		{ 0, 0},
-		0, WHITE);
+	DrawTexturePro(
+		title_screen,
+		{ 0, 0, 16 * 6, 16 * 5 },
+	{
+		left_margin + (area_size - player_size.x) / 2 - 40 - (tile_size * 6 * zoom) / 2,
+		top_margin + (area_size - player_size.y) / 2 - (tile_size * 5 * zoom) / 2,
+		tile_size * 6 * zoom,
+		tile_size * 5 * zoom
+	},
+		{ 0, 0 },
+		0,
+		WHITE
+	);
 }
 void DrawGameOverScreen() {
 	ClearBackground(BLACK);
