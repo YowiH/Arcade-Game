@@ -58,13 +58,14 @@ int anim_dir; //variable to know what animation to play when shooting
 
 
 //MAPS AND AREAS
-int level_count = 0;
+int level_count = 4;
 int powerUp_lifespan = 600;
 bool obstacles_positioned = false;
 
 //ENEMY SPAWNING VARIABLES
 int active_enemies, max_active_enemies = 5;
 int enemy_creation_delay = 30, frames_since_enemy_spawn = 0;
+bool boss_defeated = false;
 
 
 //CLASS HIERARCHY
@@ -78,9 +79,6 @@ public:
 class player_character : GameObject {
 public:
 	Vector2 shoot_dir;
-};
-class Bullet : GameObject {
-	int damage;
 };
 
 struct bullet {
@@ -98,6 +96,19 @@ struct Enemy {
 	int anim_counter = 0;
 	bool right_foot;
 	char type; // 'O' for orc, 'G' for ogre, 'M' for mushroom
+	bool isBoss = false;
+
+	float boss_min_x = left_margin + tile_size, boss_max_x = area_size + (left_margin) - 2 * tile_size; // For boss movement limits
+	int boss_move_direction = 1; // 1 for right, -1 for left
+	int boss_state = 0; // 0: moving, 1: exposing, 2: shooting, 3: retreating
+	int boss_timer = 0; // Timer for boss state changes
+	int boss_volley_timer = 0; // Timer for boss volley attack
+	int boss_bullets_fired = 0; // Number of bullets fired in the volley attack
+	int boss_exposure_time = 60; // Time the boss is vulnerable after a volley attack
+	int boss_retreat_time = 40; // Time the boss retreats after a volley attack
+	int boss_cycle_delay = 30; // Delay between boss cycles
+	int boss_bullet_interval = 10; // Interval between bullets in the volley attack
+	bool boss_dashing = false;
 };
 
 struct powerUp {
@@ -282,6 +293,7 @@ void LoadAssets() {
 	orc_spritesheet = LoadTexture("orc_spritesheet.png");
 	ogre_spritesheet = LoadTexture("ogre_spritesheet.png");
 	mushroom_spritesheet = LoadTexture("mushroom_spritesheet.png");
+	cowboy_spritesheet = LoadTexture("cowboy_spritesheet.png");
 
 	//DAMAGE & DEATH ANIMATIONS
 	death_animation_enemy = LoadTexture("death_animation_enemy.png");
@@ -467,8 +479,44 @@ void PlayerMovement() {
 	
 }
 
+void createBoss() {
+	bool bossExists = false;
+	for (const auto& enemy : enemy_tracker) {
+		if (enemy.isBoss) {
+			bossExists = true;
+			break;
+		}
+	}
+	if (bossExists) return; // If a boss already exists, do not create another one
+
+	Enemy boss;
+	boss.position = { left_margin + (area_size - player_size.x) / 2 + 16,  area_size - 2 * tile_size }; // Set the boss position
+	boss.type = 'B';
+	boss.hp = 20;
+	boss.speed = 2.0f;
+	boss.isBoss = true; // Mark this enemy as a boss
+	enemy_tracker.push_back(boss);
+	active_enemies++;
+
+	boss.boss_min_x = tile_size;
+	boss.boss_max_x = area_size + left_margin - tile_size;
+	boss.boss_move_direction = 1;
+	boss.boss_state = 0;
+	boss.boss_timer = 0;
+	boss.boss_volley_timer = 3;
+	boss.boss_bullets_fired = 0;
+	boss.boss_exposure_time = 60;
+	boss.boss_retreat_time = 40;
+	boss.boss_cycle_delay = 30;
+	boss.boss_bullet_interval = 10;
+	boss.boss_dashing = false;
+}
+
 void createEnemies() {
 	if (level_count == 4 || level_count == 8) {
+		if (!boss_defeated) {
+			createBoss(); // Create a boss if the level is 4 or 8
+		}
 		frames_since_enemy_spawn++;
 		return;
 	}
@@ -593,9 +641,43 @@ bool checkEnemyObstacleCollision(Vector2 newPos, float size, const std::vector<O
 	return false; // No collision
 }
 
+const int boss_bullet_speed = 5;
+const int boss_bullet_damage = 1;
+int boss_shoot_cooldown = 0; // Cooldown for boss shooting
+
 void enemyMovement() {
 	for (int i = 0; i < enemy_tracker.size(); i++) {
 		Enemy& enemy = enemy_tracker[i];
+
+		if (enemy.isBoss) {
+			// Move side to side only
+			enemy.position.x += enemy.speed * enemy.boss_move_direction;
+			if (enemy.position.x < enemy.boss_min_x) {
+				enemy.position.x = enemy.boss_min_x;
+				enemy.boss_move_direction = 1;
+			}
+			if (enemy.position.x > enemy.boss_max_x) {
+				enemy.position.x = enemy.boss_max_x;
+				enemy.boss_move_direction = -1;
+			}
+
+			// Boss shooting logic
+			if (boss_shoot_cooldown <= 0) {
+				bullet b;
+				b.damage = boss_bullet_damage;
+				b.position = { enemy.position.x + tile_size / 2 - 4, enemy.position.y }; // Centered on boss
+				b.velocity = { 0, -1 }; // Upwards (bottom to top)
+				b.speed = boss_bullet_speed;
+				bullet_tracker.push_back(b);
+				boss_shoot_cooldown = 60; // Shoot every 60 frames (1 second at 60 FPS)
+			}
+			else {
+				boss_shoot_cooldown--;
+			}
+
+			continue; // Skip normal enemy movement
+		}
+
 		float magnitude = sqrt(
 			(player_pos.x - enemy.position.x) * (player_pos.x - enemy.position.x) +
 			(player_pos.y - enemy.position.y) * (player_pos.y - enemy.position.y)
@@ -616,6 +698,25 @@ void enemyMovement() {
 		Vector2 newPosY = { enemy.position.x, enemy.position.y + dy };
 		if (!checkEnemyObstacleCollision(newPosY, tile_size, obstacle_tracker)) {
 			enemy.position.y += dy;
+		}
+	}
+}
+
+void bossBullet_playerColl() {
+	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
+		// Only check boss bullets (if you want to distinguish, you can add a flag to bullet struct)
+		// For now, assume all bullets with velocity {0, -1} are boss bullets
+		if (bullet_tracker[i].velocity.x == 0 && bullet_tracker[i].velocity.y == -1) {
+			if (CheckCollisionCircles(
+				{ player_pos.x + (player_size.x / 2), player_pos.y + (player_size.y / 2) }, player_size.x / 2,
+				{ bullet_tracker[i].position.x, bullet_tracker[i].position.y }, tile_size / 8)) {
+				// Damage player
+				lives--;
+				// Remove bullet
+				bullet_pool.push_back(bullet_tracker[i]);
+				bullet_tracker.erase(bullet_tracker.begin() + i);
+				// Optionally, handle player death here
+			}
 		}
 	}
 }
@@ -897,6 +998,10 @@ void bullet_enemyColl() { //bug here?
 						//crea un death animations object
 						createDeathAnimation(enemy_tracker[i].position);
 
+						if (enemy_tracker[i].isBoss) {
+							boss_defeated = true;
+						}
+
 						//borrar enemy
 						auto& e = enemy_tracker.begin() + i;
 						enemy_tracker.erase(e);
@@ -1016,7 +1121,7 @@ void changeLevel() {
 			level_count = 0;
 		}
 		player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
-
+		boss_defeated = false;
 	}
 }
 //UPDATE GAME
@@ -1058,6 +1163,8 @@ void UpdateGame() {//update variables and positions
 
 			//bullets-obstacles
 			bullet_obstacleColl();
+
+			bossBullet_playerColl();
 
 			//player power-up colisions
 			player_powerUpColl();
@@ -1243,27 +1350,40 @@ void DrawUI() {
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
 	for (int i = 0; i < enemy_amount; i++) {
-		if (enemy_tracker[i].right_foot) {
-			src = { 0, 0, 16, 16 };
+		Texture2D texture;
+		Rectangle drawRect = { enemy_tracker[i].position.x, enemy_tracker[i].position.y, tile_size, tile_size };
+		if (enemy_tracker[i].isBoss) {
+			texture = cowboy_spritesheet;
+			if (enemy_tracker[i].right_foot) {
+				src = { 32, 0, 16, 16 };
+			}
+			else {
+				src = { 48, 0, 16, 16 };
+			}
 		}
 		else {
-			src = { 16, 0, 16, 16 };
-		}
-		Texture2D texture;
-		switch (enemy_tracker[i].type) {
-		case 'O': //orc
-			texture = orc_spritesheet;
-			break;
-		case 'G': // ogre
-			texture = ogre_spritesheet;
-			break;
-		case 'M': // mushroom
-			texture = mushroom_spritesheet;
-			break;
-		default:
-			cout << "enemy type not recognized" << endl;
-			texture = orc_spritesheet; //default texture
-			break;
+			switch (enemy_tracker[i].type) {
+			case 'O': //orc
+				texture = orc_spritesheet;
+				break;
+			case 'G': // ogre
+				texture = ogre_spritesheet;
+				break;
+			case 'M': // mushroom
+				texture = mushroom_spritesheet;
+				break;
+			default:
+				cout << "enemy type not recognized" << endl;
+				texture = orc_spritesheet; //default texture
+				break;
+			}
+
+			if (enemy_tracker[i].right_foot) {
+				src = { 0, 0, 16, 16 };
+			}
+			else {
+				src = { 16, 0, 16, 16 };
+			}
 		}
 		DrawTexturePro(texture, src, { enemy_tracker[i].position.x, enemy_tracker[i].position.y , tile_size, tile_size }, { 0,0 }, 0, WHITE);
 	}
