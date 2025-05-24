@@ -744,51 +744,49 @@ float GetAngle(Vector2 v, Vector2 u) {
 }
 
 
-void restrainPlayerMovement(float x, float y) {
-	//define two vectors and use them to conclude the direction of the colision
-	Vector2 v = { 0, 0 };
-	Vector2 u = { 0, 0 };
+void restrainPlayerMovement(const Rectangle& obstacle_rec) {
+	Rectangle player_rec = { player_pos.x, player_pos.y, player_size.x, player_size.y };
 
-	//inici vector
-	float x0 = player_pos.x;
-	float y0 = player_pos.y;
+	// Calculate overlap on both axes
+	float overlapLeft = (player_rec.x + player_rec.width) - obstacle_rec.x;
+	float overlapRight = (obstacle_rec.x + obstacle_rec.width) - player_rec.x;
+	float overlapTop = (player_rec.y + player_rec.height) - obstacle_rec.y;
+	float overlapBottom = (obstacle_rec.y + obstacle_rec.height) - player_rec.y;
 
-	//v va des del centre del obstacle (cantonada esquerra de dalt) al centre del jugador
-	v = { x0 - x, y0 - y };
-	//u va des del centre del jugador al centre de l'obstacle
-	u = { tile_size / 2, 0 };
-	float theta = GetAngle(u, v);
+	// Find the axis of least penetration
+	float minOverlapX = (overlapLeft < overlapRight) ? overlapLeft : overlapRight;
+	float minOverlapY = (overlapTop < overlapBottom) ? overlapTop : overlapBottom;
 
-	if (theta >= PI / 4 && theta < 3 * PI / 4) {
-		//colisio per dalt
-		yNegBlock = true;
-	}
-	else if (theta >= 3 * PI / 4 && theta < 5 * PI / 4) {
-		//colisió per l'esquerra
-		xNegBlock = true;
-	}
-	else if (theta >= 5 * PI / 4 && theta < 7 * PI / 4) {
-		//colisio per baix
-		yPosBlock = true;
-	}
-	else if (theta >= 7 * PI / 4 || theta < PI / 4) {
-		//colisio per la dreta
-		xPosBlock = true;
+	if (minOverlapX < minOverlapY) {
+		// Resolve on X axis
+		if (overlapLeft < overlapRight) {
+			player_pos.x -= overlapLeft;
+			xPosBlock = true;
+		}
+		else {
+			player_pos.x += overlapRight;
+			xNegBlock = true;
+		}
 	}
 	else {
-		cout << "error when calculating the angle" << endl;
+		// Resolve on Y axis
+		if (overlapTop < overlapBottom) {
+			player_pos.y -= overlapTop;
+			yPosBlock = true;
+		}
+		else {
+			player_pos.y += overlapBottom;
+			yNegBlock = true;
+		}
 	}
-
-	return;
-
 }
 
 void player_obstacleColl() {
-	//check all obstacle colliders
 	Rectangle rec_player = { player_pos.x, player_pos.y, tile_size, tile_size };
 	for (int i = 0; i < obstacle_tracker.size(); i++) {
-		if (CheckCollisionRecs(rec_player, obstacle_tracker[i].get_rec())) {
-			restrainPlayerMovement(obstacle_tracker[i].get_rec().x, obstacle_tracker[i].get_rec().y);
+		Rectangle rec_obstacle = obstacle_tracker[i].get_rec();
+		if (CheckCollisionRecs(rec_player, rec_obstacle)) {
+			restrainPlayerMovement(rec_obstacle);
 		}
 	}
 }
