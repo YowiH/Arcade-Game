@@ -1320,17 +1320,17 @@ void DrawUI() {
 	DrawTextureEx(timer, { static_cast<float>(left_margin + 10), static_cast<float>(tile_size * 0.45f / 2) }, 0, tile_size / 16, WHITE);
 
 	//draw life 
-	DrawTextureEx(extra_life, { 0, left_margin }, 0, (tile_size / 16) * 1.25, WHITE);
+	DrawTextureEx(extra_life, { 10, left_margin + 20 }, 0, (tile_size / 16) * 1.25, WHITE);
 	//write actual lives
-	DrawText(TextFormat("X%i", lives), tile_size + tile_size / 2, left_margin + tile_size / 4, 10 * (tile_size / 16), WHITE);
+	DrawText(TextFormat("X%i", lives), tile_size + tile_size / 2 + 10, left_margin + tile_size / 4 + 20, 10 * (tile_size / 16), WHITE);
 
 	//draw coins
-	DrawTextureEx(coin, { 0, tile_size * 4 }, 0, (tile_size / 16) * 1.25, WHITE);
+	DrawTextureEx(coin, { 10, tile_size * 4 + 20 }, 0, (tile_size / 16) * 1.25, WHITE);
 	//write actual coins
-	DrawText(TextFormat("X%i", coins), tile_size + tile_size/2, tile_size * 4 + tile_size / 4, 10 * (tile_size / 16), WHITE);
+	DrawText(TextFormat("X%i", coins), tile_size + tile_size/2 + 10, tile_size * 4 + tile_size / 4 + 20, 10 * (tile_size / 16), WHITE);
 	
 	//draw power up slot
-	DrawTextureEx(power_up_slot, { tile_size, tile_size}, 0, (tile_size / 16) * 1.25, WHITE);
+	DrawTextureEx(power_up_slot, { tile_size / 2 + 5, tile_size / 2 + 25}, 0, (tile_size / 16) * 1.25, WHITE);
 
 	if (level_count == 4 || level_count == 8) {
 		int bossCurrentHP = 0;
