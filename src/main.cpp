@@ -1766,7 +1766,7 @@ void DrawUI() {
 	
 	//power-ups
 	if (stored_power_up == 'D') {
-		DrawTextureEx(coffee, { tile_size * 1.1f, tile_size * 1.3f }, 0, (tile_size / 16) * 1.25, WHITE);
+		DrawTextureEx(coffee, { tile_size * 0.9f, tile_size * 1.5f }, 0, (tile_size / 16) * 1.25, WHITE);
 	}
 
 	//draw upgrades in bottom corner
