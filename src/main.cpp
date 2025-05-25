@@ -100,6 +100,12 @@ struct Enemy {
 	bool right_foot;
 	char type; // 'O' for orc, 'G' for ogre, 'M' for mushroom
 	bool isBoss = false;
+	int boss_direction = -1;
+	int boss_max_left = left_margin + tile_size;
+	int boss_max_right = area_size + left_margin - 2 * tile_size;
+	int boss_center = left_margin + (area_size - player_size.x) / 2 + 16;
+	int boss_min_left = left_margin + (area_size - player_size.x) / 2 - 16;
+	int boss_min_right = left_margin + (area_size - player_size.x) / 2 + 3 * 16;
 };
 
 struct powerUp {
@@ -622,6 +628,20 @@ bool checkEnemyObstacleCollision(Vector2 newPos, float size, const std::vector<O
 void enemyMovement() {
 	for (int i = 0; i < enemy_tracker.size(); i++) {
 		Enemy& enemy = enemy_tracker[i];
+
+		if (enemy.isBoss) {
+			enemy.position.x += enemy.speed * enemy.boss_direction;
+			if (enemy.position.x < enemy.boss_max_left) {
+				enemy.position.x = enemy.boss_max_left;
+				enemy.boss_direction = 1;
+			}
+			if (enemy.position.x > enemy.boss_max_right) {
+				enemy.position.x = enemy.boss_max_right;
+				enemy.boss_direction = -1;
+			}
+			continue;
+		}
+
 		float magnitude = sqrt(
 			(player_pos.x - enemy.position.x) * (player_pos.x - enemy.position.x) +
 			(player_pos.y - enemy.position.y) * (player_pos.y - enemy.position.y)
