@@ -753,6 +753,7 @@ void bulletUpdate() {
 	}
 
 	//destroy bullets
+	if (bullet_tracker.empty()) return;
 	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
 		//iterate and check all bullets if they are ouside of the map (should I check if they colisioned?, might only have to check the first shot if we don't check colisions)
 		if ((bullet_tracker[i].position.x <= left_margin || bullet_tracker[i].position.x >= area_size + (left_margin) || bullet_tracker[i].position.y <= tile_size || bullet_tracker[i].position.y >= area_size + tile_size)) { //&& bullet_tracker[i] != NULL
@@ -786,6 +787,9 @@ void playerDeath() {
 	PlaySound(player_death);
 	//borrar enemics
 	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
+		if (enemy_tracker[i].isBoss) {
+			continue;
+		}
 		//save the bullet in the pool
 		enemy_pool.push_back(enemy_tracker[i]);
 		//borrar bullet
@@ -814,6 +818,27 @@ void playerDeath() {
 	}
 }
 
+void bossBullet_playerColl() {
+	if (bullet_tracker.empty()) return;
+
+	for (int i = bullet_tracker.size() - 1; i >= 0; i--) {
+		if (bullet_tracker[i].isBossBullet) {
+			// Check collision with player
+			if (CheckCollisionCircles(
+				{ bullet_tracker[i].position.x + tile_size / 2, bullet_tracker[i].position.y + tile_size / 2 }, tile_size / 8,
+				{ player_pos.x + player_size.x / 2, player_pos.y + player_size.y / 2 }, player_size.x / 2)) {
+
+				// Player takes damage or dies
+				lives--;
+				playerDeath();
+
+				// Optionally, break if you want only one bullet to hit per frame
+				// break;
+				return;
+			}
+		}
+	}
+}
 
 //COLLISIONS
 void player_enemyColl() {
@@ -1092,31 +1117,8 @@ void animationManager() {
 }
 
 void changeLevel() {
-	if (level_count != 4 && level_count != 8) {
-		if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
-			frames_since_level_start = 0;
-			//delete all obstacles
-			obstacle_tracker.clear();
-			obstacles_positioned = false;
-			powerUp_tracker.clear();
-			deathAnim_tracker.clear();
-			if (level_count + 1 < map_list.size()) {//adds one to the index of the map vector
-				level_count++;
-			}
-			else {//repeats to the first level if player is on the last
-				level_count = 0;
-			}
 
-			if (level_count == 4 || level_count == 8) {
-				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
-			}
-			else {
-				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
-			}
-			boss_defeated = false;
-		}
-	}
-	else {
+	if (level_count == 4 || level_count == 8) {
 		if (IsKeyDown('N') && boss_defeated) {
 			frames_since_level_start = 0;
 			//delete all obstacles
@@ -1130,6 +1132,31 @@ void changeLevel() {
 			else {//repeats to the first level if player is on the last
 				level_count = 0;
 			}
+			if (level_count == 4 || level_count == 8) {
+				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
+			}
+			else {
+				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+			}
+			boss_defeated = false;
+		}
+	}
+	else {
+		if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
+			frames_since_level_start = 0;
+			//delete all obstacles
+			obstacle_tracker.clear();
+			obstacles_positioned = false;
+			powerUp_tracker.clear();
+			deathAnim_tracker.clear();
+			bullet_tracker.clear();
+			if (level_count + 1 < map_list.size()) {//adds one to the index of the map vector
+				level_count++;
+			}
+			else {//repeats to the first level if player is on the last
+				level_count = 0;
+			}
+
 			if (level_count == 4 || level_count == 8) {
 				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
 			}
@@ -1163,6 +1190,7 @@ void UpdateGame() {//update variables and positions
 
 			//update bullets
 			bulletUpdate();
+			bossBullet_playerColl();
 
 			//update power ups
 			powerUpUpdate();
@@ -1327,7 +1355,12 @@ void DrawPlayerDeath() {
 	else if (player_death_anim <= 10 * 10) {}
 	else {
 		player_dying = false;
-		player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+		if (level_count == 4 || level_count == 8) {
+			player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
+		}
+		else {
+			player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+		}
 		player_death_anim = 0;
 		player_walk_anim_counter = 0;
 		player_death_anim = 0;
