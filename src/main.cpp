@@ -494,7 +494,7 @@ void createBoss() {
 	Enemy boss;
 	boss.position = { left_margin + (area_size - player_size.x) / 2 + 16,  area_size - 2 * tile_size }; // Set the boss position
 	boss.type = 'B';
-	boss.hp = 20;
+	boss.hp = 10;
 	boss.speed = 2.0f;
 	boss.isBoss = true; // Mark this enemy as a boss
 	enemy_tracker.push_back(boss);
@@ -936,6 +936,7 @@ void bullet_enemyColl() { //bug here?
 
 					//reduce hit enemy hitpoints
 					enemy_tracker[i].hp -= damage;
+				
 					//kill enemy if hitpoints are 0 or lower
 					if (enemy_tracker[i].hp <= 0) {
 
@@ -1331,9 +1332,27 @@ void DrawUI() {
 	//draw power up slot
 	DrawTextureEx(power_up_slot, { tile_size, tile_size}, 0, (tile_size / 16) * 1.25, WHITE);
 
-	//draw level bar
-	int length = area_size - (area_size * (frames_since_level_start / level_length));
-	if (level_count != 4 && level_count != 8) {
+	if (level_count == 4 || level_count == 8) {
+		int bossCurrentHP = 0;
+		for (const auto& enemy : enemy_tracker) {
+			if (enemy.isBoss) {
+				bossCurrentHP = enemy.hp;
+				break;
+			}
+		}
+		const int BOSS_MAX_HP = 10;
+		float barMaxWidth = area_size;
+		float barHeight = tile_size * 0.4f;
+		float barX = left_margin;
+		float barY = area_size + tile_size - barHeight;
+		float barWidth = (bossCurrentHP / (float)BOSS_MAX_HP) * barMaxWidth;
+		if (bossCurrentHP > 0) {
+			DrawRectangle(barX, barY, barWidth, barHeight, RED);
+			DrawRectangleLines(barX, barY, barMaxWidth, barHeight, BLACK);
+		}
+	}
+	else {
+		int length = area_size - (area_size * (frames_since_level_start / level_length));
 		DrawRectangle(tile_size * 4, tile_size * 0.45, length, tile_size * 0.4, GREEN);
 	}
 }
@@ -1514,7 +1533,7 @@ int main()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// Create the window and OpenGL context
-	InitWindow(area_size + (left_margin), area_size + tile_size, "Journey of the prairie king");
+	InitWindow(area_size + left_margin, area_size + tile_size, "Journey of the prairie king");
 
 	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
 	SearchAndSetResourceDir("resources");
