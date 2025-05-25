@@ -55,7 +55,7 @@ int fire_frame_counter = 0;
 int fire_rate = 15;
 Vector2 Shoot_dir;
 int anim_dir; //variable to know what animation to play when shooting
-
+int boss_shoot_cooldown = 0;
 
 //MAPS AND AREAS
 int level_count = 0;
@@ -89,6 +89,7 @@ struct bullet {
 	Vector2 velocity;
 	Vector2 position;
 	int damage;
+	bool isBossBullet = false;
 };
 
 struct Enemy {
@@ -644,6 +645,22 @@ void enemyMovement() {
 				enemy.position.x = enemy.boss_max_right;
 				enemy.boss_direction = -1;
 			}
+
+			// Boss bullet shooting logic
+			if (boss_shoot_cooldown <= 0) {
+				bullet b;
+				b.damage = 1; // Boss bullet damage
+				b.position = { enemy.position.x + tile_size / 2, enemy.position.y + tile_size / 2 };
+				b.velocity = { 0, -1 }; // Boss shoots up
+				b.speed = 3; // Boss bullet speed
+				b.isBossBullet = true; // Mark as boss bullet
+				bullet_tracker.push_back(b);
+				boss_shoot_cooldown = 60; // Reset cooldown (1 second at 60 FPS)
+			}
+			else {
+				boss_shoot_cooldown--;
+			}
+
 			continue;
 		}
 
@@ -709,6 +726,7 @@ void bulletShooting() {
 			bullet_tracker.back().damage = damage;
 			bullet_tracker.back().position = { player_pos.x + tile_size / 4 , player_pos.y + tile_size / 4 };
 			bullet_tracker.back().velocity = Shoot_dir;
+			bullet_tracker.back().isBossBullet = false; // Ensure it's not a boss bullet
 			bullet_pool.pop_back();
 		}
 		fire_frame_counter++;
