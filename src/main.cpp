@@ -27,9 +27,9 @@ int randVal; //used to get random values;
 float level_length = 60 * 10; //all the frames in 2 minutes: 60 * 60 * 2
 float frames_since_level_start = 0;
 
- static float zoom = 0.01f * (tile_size / 16);
- static bool zoom_completed = false;
- static float zoom_speed = 0.02f * (tile_size / 16);
+static float zoom = 0.01f * (tile_size / 16);
+static bool zoom_completed = false;
+static float zoom_speed = 0.02f * (tile_size / 16);
 
 //game over screen variables
 //int selected_option = 0;
@@ -65,6 +65,7 @@ bool obstacles_positioned = false;
 //ENEMY SPAWNING VARIABLES
 int active_enemies, max_active_enemies = 5;
 int enemy_creation_delay = 30, frames_since_enemy_spawn = 0;
+bool boss_defeated = false;
 
 
 //CLASS HIERARCHY
@@ -98,6 +99,7 @@ struct Enemy {
 	int anim_counter = 0;
 	bool right_foot;
 	char type; // 'O' for orc, 'G' for ogre, 'M' for mushroom
+	bool isBoss = false;
 };
 
 struct powerUp {
@@ -282,6 +284,7 @@ void LoadAssets() {
 	orc_spritesheet = LoadTexture("orc_spritesheet.png");
 	ogre_spritesheet = LoadTexture("ogre_spritesheet.png");
 	mushroom_spritesheet = LoadTexture("mushroom_spritesheet.png");
+	cowboy_spritesheet = LoadTexture("cowboy_spritesheet.png");
 
 	//DAMAGE & DEATH ANIMATIONS
 	death_animation_enemy = LoadTexture("death_animation_enemy.png");
@@ -467,8 +470,31 @@ void PlayerMovement() {
 	
 }
 
+void createBoss() {
+	bool bossExists = false;
+	for (const auto& enemy : enemy_tracker) {
+		if (enemy.isBoss) {
+			bossExists = true;
+			break;
+		}
+	}
+	if (bossExists) return; // If a boss already exists, do not create another one
+
+	Enemy boss;
+	boss.position = { left_margin + (area_size - player_size.x) / 2 + 16,  area_size - 2 * tile_size }; // Set the boss position
+	boss.type = 'B';
+	boss.hp = 20;
+	boss.speed = 2.0f;
+	boss.isBoss = true; // Mark this enemy as a boss
+	enemy_tracker.push_back(boss);
+	active_enemies++;
+}
+
 void createEnemies() {
 	if (level_count == 4 || level_count == 8) {
+		if (!boss_defeated) {
+			createBoss();
+		}
 		frames_since_enemy_spawn++;
 		return;
 	}
@@ -889,13 +915,19 @@ void bullet_enemyColl() { //bug here?
 					if (enemy_tracker[i].hp <= 0) {
 
 						//save the enemy in the pool
-						enemy_pool.push_back(enemy_tracker[i]);
+						if (!enemy_tracker[i].isBoss) {
+							enemy_pool.push_back(enemy_tracker[i]);
+						}
 
 						//mirar si es crea un power up
 						spawnPowerUp(enemy_tracker[i].position.x, enemy_tracker[i].position.y);
 
 						//crea un death animations object
 						createDeathAnimation(enemy_tracker[i].position);
+
+						if (enemy_tracker[i].isBoss) {
+							boss_defeated = true;
+						}
 
 						//borrar enemy
 						auto& e = enemy_tracker.begin() + i;
@@ -1029,6 +1061,7 @@ void changeLevel() {
 		else {
 			player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
 		}
+		boss_defeated = false;
 	}
 }
 //UPDATE GAME
@@ -1249,34 +1282,46 @@ void DrawUI() {
 	DrawTextureEx(power_up_slot, { tile_size, tile_size}, 0, (tile_size / 16) * 1.25, WHITE);
 
 	//draw level bar
-	int leangth = area_size - (area_size * (frames_since_level_start / level_length));
-	DrawRectangle(tile_size * 4, tile_size * 0.45, leangth, tile_size * 0.4, GREEN);
+	int length = area_size - (area_size * (frames_since_level_start / level_length));
+	DrawRectangle(tile_size * 4, tile_size * 0.45, length, tile_size * 0.4, GREEN);
 }
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
 	for (int i = 0; i < enemy_amount; i++) {
-		if (enemy_tracker[i].right_foot) {
-			src = { 0, 0, 16, 16 };
+		Texture2D texture;
+		if (enemy_tracker[i].isBoss) {
+			texture = cowboy_spritesheet;
+			if (enemy_tracker[i].right_foot) {
+				src = { 32, 0, 16, 16 };
+			}
+			else {
+				src = { 48, 0, 16, 16 };
+			}
 		}
 		else {
-			src = { 16, 0, 16, 16 };
+			switch (enemy_tracker[i].type) {
+			case 'O': //orc
+				texture = orc_spritesheet;
+				break;
+			case 'G': // ogre
+				texture = ogre_spritesheet;
+				break;
+			case 'M': // mushroom
+				texture = mushroom_spritesheet;
+				break;
+			default:
+				cout << "enemy type not recognized" << endl;
+				texture = orc_spritesheet; //default texture
+				break;
+			}
+			if (enemy_tracker[i].right_foot) {
+				src = { 0, 0, 16, 16 };
+			}
+			else {
+				src = { 16, 0, 16, 16 };
+			}
 		}
-		Texture2D texture;
-		switch (enemy_tracker[i].type) {
-		case 'O': //orc
-			texture = orc_spritesheet;
-			break;
-		case 'G': // ogre
-			texture = ogre_spritesheet;
-			break;
-		case 'M': // mushroom
-			texture = mushroom_spritesheet;
-			break;
-		default:
-			cout << "enemy type not recognized" << endl;
-			texture = orc_spritesheet; //default texture
-			break;
-		}
+		
 		DrawTexturePro(texture, src, { enemy_tracker[i].position.x, enemy_tracker[i].position.y , tile_size, tile_size }, { 0,0 }, 0, WHITE);
 	}
 }
