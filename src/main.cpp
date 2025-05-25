@@ -372,7 +372,12 @@ void InitGame() {
 	game_started = false;
 	zoom_completed = false;
 	lives = 3;
-	player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+	if (level_count == 4 || level_count == 8) {
+		player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, 7 * tile_size };
+	}
+	else {
+		player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+	}
 	InitAudioDevice();
 	LoadAssets();
 	//start playing music
@@ -1061,27 +1066,52 @@ void animationManager() {
 }
 
 void changeLevel() {
-	if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
-		frames_since_level_start = 0;
-		//delete all obstacles
-		obstacle_tracker.clear();
-		obstacles_positioned = false;
-		powerUp_tracker.clear();
-		deathAnim_tracker.clear();
-		if (level_count + 1 < map_list.size()) {//adds one to the index of the map vector
-			level_count++;
-		}
-		else {//repeats to the first level if player is on the last
-			level_count = 0;
-		}
+	if (level_count != 4 && level_count != 8) {
+		if (IsKeyDown('N') && frames_since_level_start >= level_length && active_enemies == 0) {//checks if the timer is over and if there aren't any enemies in order to advance
+			frames_since_level_start = 0;
+			//delete all obstacles
+			obstacle_tracker.clear();
+			obstacles_positioned = false;
+			powerUp_tracker.clear();
+			deathAnim_tracker.clear();
+			if (level_count + 1 < map_list.size()) {//adds one to the index of the map vector
+				level_count++;
+			}
+			else {//repeats to the first level if player is on the last
+				level_count = 0;
+			}
 
-		if (level_count == 4 || level_count == 8) {
-			player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
+			if (level_count == 4 || level_count == 8) {
+				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
+			}
+			else {
+				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+			}
+			boss_defeated = false;
 		}
-		else {
-			player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+	}
+	else {
+		if (IsKeyDown('N') && boss_defeated) {
+			frames_since_level_start = 0;
+			//delete all obstacles
+			obstacle_tracker.clear();
+			obstacles_positioned = false;
+			powerUp_tracker.clear();
+			deathAnim_tracker.clear();
+			if (level_count + 1 < map_list.size()) {//adds one to the index of the map vector
+				level_count++;
+			}
+			else {//repeats to the first level if player is on the last
+				level_count = 0;
+			}
+			if (level_count == 4 || level_count == 8) {
+				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, tile_size * 7 };
+			}
+			else {
+				player_pos = { left_margin + (area_size - player_size.x) / 2 + 16, top_margin + (area_size - player_size.y) / 2 + 16 };
+			}
+			boss_defeated = false;
 		}
-		boss_defeated = false;
 	}
 }
 //UPDATE GAME
@@ -1303,7 +1333,9 @@ void DrawUI() {
 
 	//draw level bar
 	int length = area_size - (area_size * (frames_since_level_start / level_length));
-	DrawRectangle(tile_size * 4, tile_size * 0.45, length, tile_size * 0.4, GREEN);
+	if (level_count != 4 && level_count != 8) {
+		DrawRectangle(tile_size * 4, tile_size * 0.45, length, tile_size * 0.4, GREEN);
+	}
 }
 void DrawEnemies() {
 	int enemy_amount = enemy_tracker.size();
