@@ -1317,7 +1317,7 @@ void DrawPlayerDeath() {
 
 void DrawUI() {
 	//draw clock
-	DrawTextureEx(timer, { left_margin, 0 }, 0, tile_size / 16, WHITE);
+	DrawTextureEx(timer, { static_cast<float>(left_margin + 10), static_cast<float>(tile_size * 0.45f / 2) }, 0, tile_size / 16, WHITE);
 
 	//draw life 
 	DrawTextureEx(extra_life, { 0, left_margin }, 0, (tile_size / 16) * 1.25, WHITE);
