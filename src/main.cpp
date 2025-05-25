@@ -719,6 +719,7 @@ void bulletShooting() {
 			b.damage = damage;
 			b.position = { player_pos.x, player_pos.y};
 			b.velocity = Shoot_dir;
+			b.speed = 5;
 			bullet_tracker.push_back(b);
 		}
 		else {
@@ -726,6 +727,7 @@ void bulletShooting() {
 			bullet_tracker.back().damage = damage;
 			bullet_tracker.back().position = { player_pos.x + tile_size / 4 , player_pos.y + tile_size / 4 };
 			bullet_tracker.back().velocity = Shoot_dir;
+			bullet_tracker.back().speed = 5;
 			bullet_tracker.back().isBossBullet = false; // Ensure it's not a boss bullet
 			bullet_pool.pop_back();
 		}
@@ -945,12 +947,17 @@ void bullet_enemyColl() { //bug here?
 	for (int i = enemy_tracker.size() - 1; i >= 0; i--) {
 		for (int j = bullet_tracker.size() - 1; j >= 0; j--) {
 			if (enemy_tracker.size() - 1 >= i && bullet_tracker.size() - 1 >= j && !enemy_tracker.empty() && !bullet_tracker.empty()) {
-				if (CheckCollisionCircles({ bullet_tracker[j].position.x + tile_size / 2, bullet_tracker[j].position.y + tile_size / 2 }, tile_size / 8, { enemy_tracker[i].position.x + tile_size/2, enemy_tracker[i].position.y + tile_size / 2 }, tile_size / 2)) { //MASSIVE ERROR
+				if (CheckCollisionCircles({ bullet_tracker[j].position.x + tile_size / 2, bullet_tracker[j].position.y + tile_size / 2 }, tile_size / 8, { enemy_tracker[i].position.x + tile_size/2, enemy_tracker[i].position.y + tile_size / 2 }, tile_size / 2)) {
+					if (enemy_tracker[i].isBoss && bullet_tracker[j].isBossBullet) {
+						// Boss bullet hits the boss, no damage
+						continue;
+					}
 					//save the bullet in the pool
-					bullet_pool.push_back(bullet_tracker[j]);
+					auto bullet = bullet_tracker[j];
+					bullet_pool.push_back(bullet);
 					//borrar bullet
-					auto& k = bullet_tracker.begin() + j;
-					bullet_tracker.erase(k);
+					bullet_tracker.erase(bullet_tracker.begin() + j);
+
 
 					//reduce hit enemy hitpoints
 					enemy_tracker[i].hp -= damage;
